@@ -2,51 +2,54 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ViDeCO</title>
+
   <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
   <style>
     html {
       scroll-behavior: smooth;
     }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+    #map {
+      height: 500px;
+    }
   </style>
 </head>
+
 <body id="top">
 
 <header>
   <div class="header-content">
     <div class="logo-container">
       <a href="#top">
-        <img src="icons/logga.png" alt="ViDeCO logo" class="logo">
+        <img src="icons/logga.png" alt="ViDeCO logo" style="height:50px;">
       </a>
     </div>
   </div>
 </header>
 
-<main class="background-image">
+<main>
+  <h1>ViDeCo</h1>
+  <p>Kompensa – under utveckling 🚀</p>
 
-<section class="hero">
-  <h1>GIS-expertis för moderna projekt.</h1>
-  <p class="tagline">En kombination av teknik, kartanalys och affärsförståelse.</p>
-  <p><strong>ViDeCO utvecklar webbaserade GIS-verktyg och erbjuder konsultstöd inom geodata, spatial analys och projektutveckling.</strong>
-  Med erfarenhet från energi-, miljö- och planeringssektorn hjälper vi företag att effektivisera processer, automatisera analyser och fatta datadrivna beslut.</p>
-  <p>Vi är just nu i en uppbyggnadsfas och tar selektivt emot nya samarbeten. Kontakta oss gärna om du vill diskutera idéer, behov eller projekt.</p>
-</section>
-
-<section class="about">
-  <h2>Om ViDeCO</h2>
-  <p>ViDeCO är ett svenskt konsultbolag.
-     Fokus ligger på att skapa smarta digitala lösningar och effektivisera arbetsflöden i energi- och utvecklingsprojekt.</p>
-  <p>Vi arbetar just nu med att utveckla vår första publika version av webbappen. Håll utkik – mer information och demo kommer snart.</p>
-</section>
-
+  <div id="map"></div>
 </main>
 
-<footer>
-  <p>© 2025 ViDeCO. All rights reserved.</p>
-</footer>
+<script>
+  var map = L.map('map').setView([55.605, 13.0038], 10);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+</script>
 
 </body>
 </html>
