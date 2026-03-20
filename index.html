@@ -1,55 +1,33 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ViDeCO</title>
-
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
+  <meta charset="UTF-8">
+  <title>ViDeCo</title>
   <style>
-    html {
-      scroll-behavior: smooth;
-    }
     body {
       margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       font-family: Arial, sans-serif;
+      background-color: #0f172a;
+      color: white;
+      text-align: center;
     }
-    #map {
-      height: 500px;
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+    p {
+      opacity: 0.7;
     }
   </style>
 </head>
-
-<body id="top">
-
-<header>
-  <div class="header-content">
-    <div class="logo-container">
-      <a href="#top">
-        <img src="icons/logga.png" alt="ViDeCO logo" style="height:50px;">
-      </a>
-    </div>
+<body>
+  <div>
+    <h1>ViDeCo</h1>
+    <p>Under development 🚀</p>
   </div>
-</header>
-
-<main>
-  <h1>ViDeCo</h1>
-  <p>Kompensa – under utveckling 🚀</p>
-
-  <div id="map"></div>
-</main>
-
-<script>
-  var map = L.map('map').setView([55.605, 13.0038], 10);
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-</script>
-
 </body>
 </html>
