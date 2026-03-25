@@ -49,8 +49,15 @@ const houseAffectedIcon = L.icon({
 });
 
 // ==========================
-// Juridiskt korrekt promille
+// Hjälpfunktioner
 // ==========================
+function setStatus(id, text, className) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = className;
+}
+
 function getPromilleForDistance(distMeters, H) {
   if (!H || isNaN(H) || H <= 0) return 0;
   if (distMeters <= 5 * H) return 2.5;
@@ -70,16 +77,9 @@ function getResidenceId(props) {
 
 function getTurbineId(props) {
   if (!props) return null;
-  const id = props["WTG_Number"] ?? props["TEXT"];
+  const id = props["WTG_Number"] ?? props["TEXT"] ?? props["VERKID"];
   if (id === undefined || id === null) return null;
   return id.toString().trim();
-}
-
-function setStatus(id, text, className) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = text;
-  el.className = `status-pill ${className}`;
 }
 
 // ==========================
@@ -108,14 +108,13 @@ function addTurbineHoverBehavior(feature, layer) {
       layer._rings.push(circle);
     });
 
-    if (residencesLayer && H > 0) {
+    if (residencesLayer) {
       const residences = residencesLayer.getLayers();
       layer._originalIcons = new Map();
 
       residences.forEach(resLayer => {
         if (!resLayer.getLatLng) return;
-        const resLatLng = resLayer.getLatLng();
-        const d = map.distance(center, resLatLng);
+        const d = map.distance(center, resLayer.getLatLng());
         const promille = getPromilleForDistance(d, H);
 
         if (promille > 0) {
@@ -151,7 +150,7 @@ function addTurbineHoverBehavior(feature, layer) {
 
     rows.forEach(tr => tr.classList.remove("highlight-row"));
 
-    const matching = rows.filter(tr => tr.children[2].textContent.trim() === wtg);
+    const matching = rows.filter(tr => tr.children[1].textContent.trim() === wtg);
     if (matching.length === 0) return;
 
     matching.forEach((tr, idx) => {
@@ -281,7 +280,7 @@ function maybeReprojectGeoJSON(geojson, srcCrs) {
 }
 
 // ==========================
-// Gemensam funktion: lägg till GeoJSON i kartan
+// Lägg till GeoJSON i kartan
 // ==========================
 function processGeoJSON(rawGeoJSON, type) {
   let geojson = rawGeoJSON;
@@ -397,7 +396,6 @@ function processGeoJSON(rawGeoJSON, type) {
   if (type === "turbine") {
     if (turbinesLayer) map.removeLayer(turbinesLayer);
     turbinesLayer = layer;
-    setStatus("turbineStatus", "Korrekt fil", "status-pill status-ok");
 
     const antalVerkEl = document.getElementById("antalVerk");
     if (antalVerkEl) antalVerkEl.textContent = geojson.features.length;
@@ -408,20 +406,15 @@ function processGeoJSON(rawGeoJSON, type) {
   if (type === "residence") {
     if (residencesLayer) map.removeLayer(residencesLayer);
     residencesLayer = layer;
-    setStatus("residenceStatus", "Korrekt fil", "status-pill status-ok");
   }
 
   layer.addTo(map);
 
-  const boundsLayers = [];
-  if (turbinesLayer) boundsLayers.push(turbinesLayer);
-  if (residencesLayer) boundsLayers.push(residencesLayer);
-
-  if (boundsLayers.length === 1) {
-    map.fitBounds(boundsLayers[0].getBounds(), { padding: [30, 30] });
-  } else if (boundsLayers.length === 2) {
-    const group = new L.featureGroup(boundsLayers);
-    map.fitBounds(group.getBounds(), { padding: [30, 30] });
+  if (turbinesLayer) {
+    map.fitBounds(turbinesLayer.getBounds(), {
+      padding: [30, 30],
+      maxZoom: 14
+    });
   }
 
   autoCalculate();
@@ -471,7 +464,6 @@ function autoCalculate() {
   for (const res of residences) {
     const resCoord = res.geometry.coordinates;
     const objektId = getResidenceId(res.properties);
-    const fastighet = res.properties["fastighet"] || "";
 
     if (!objektId) {
       console.warn("Bostad utan objekt-id hittades och hoppades över.", res.properties);
@@ -479,10 +471,9 @@ function autoCalculate() {
     }
 
     const dists = turbines.map(turbine => {
-      const tCoord = turbine.geometry.coordinates;
       const dist = turf.distance(
         turf.point(resCoord),
-        turf.point(tCoord),
+        turf.point(turbine.geometry.coordinates),
         { units: "kilometers" }
       ) * 1000;
 
@@ -508,7 +499,6 @@ function autoCalculate() {
     relevanta.forEach(item => {
       rows.push({
         objektiden: objektId,
-        fastighet,
         verk: item.WTG_Number,
         avstand: Math.round(item.dist),
         promille: item.promille,
@@ -541,10 +531,11 @@ function autoCalculate() {
 
   currentRows = rows;
   renderTable(currentRows);
-  updateSummary(currentRows, intaktAnlaggning);
+  renderTurbineCostTable(currentRows);
+  updateSummary(currentRows);
 }
 
-function updateSummary(rows, intaktAnlaggning) {
+function updateSummary(rows) {
   const box = document.getElementById("summaryBox");
   if (!box) return;
 
@@ -567,13 +558,13 @@ function updateSummary(rows, intaktAnlaggning) {
   let capText = "";
   if (capApplied && capFactor < 1) {
     const faktorText = capFactor.toFixed(3).replace('.', ',');
-    capText =
-      `<br><strong>Obs:</strong> 2 %-taket har aktiverats. Skalfaktor: ${faktorText}
-       <span id="capInfoToggle" style="cursor:pointer; margin-left:4px;">ⓘ</span>
-       <div id="capInfoDetail" style="display:none; margin-top:4px;">
-         Den totala ersättningen översteg 2 procent av anläggningens intäkter,
-         därför har samtliga ersättningar skalats ned proportionellt.
-       </div>`;
+    capText = `
+      <br><strong>Obs:</strong> 2 %-taket har aktiverats. Skalfaktor: ${faktorText}
+      <span id="capInfoToggle" style="cursor:pointer; margin-left:4px;">ⓘ</span>
+      <div id="capInfoDetail" style="display:none; margin-top:4px;">
+        Den totala ersättningen översteg 2 procent av anläggningens intäkter,
+        därför har samtliga ersättningar skalats ned proportionellt.
+      </div>`;
   }
 
   box.innerHTML = `
@@ -594,6 +585,48 @@ function updateSummary(rows, intaktAnlaggning) {
   }
 }
 
+function renderTurbineCostTable(rows) {
+  const tbody = document.querySelector("#turbineResultTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  if (!rows || rows.length === 0) return;
+
+  const turbineMap = {};
+
+  rows.forEach(row => {
+    if (!row.verk) return;
+
+    if (!turbineMap[row.verk]) {
+      turbineMap[row.verk] = {
+        verk: row.verk,
+        totalErsattning: 0,
+        bostader: new Set()
+      };
+    }
+
+    turbineMap[row.verk].totalErsattning += row.ersattning || 0;
+
+    if (row.objektiden) {
+      turbineMap[row.verk].bostader.add(row.objektiden);
+    }
+  });
+
+  const turbineRows = Object.values(turbineMap)
+    .sort((a, b) => b.totalErsattning - a.totalErsattning);
+
+  turbineRows.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.verk}</td>
+      <td>${row.totalErsattning.toLocaleString("sv-SE")} SEK</td>
+      <td>${row.bostader.size}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 function renderTable(data) {
   const tbody = document.querySelector("#resultTable tbody");
   tbody.innerHTML = "";
@@ -602,7 +635,6 @@ function renderTable(data) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${row.objektiden}</td>
-      <td>${row.fastighet}</td>
       <td>${row.verk}</td>
       <td>${row.avstand} m</td>
       <td>${row.promille.toString().replace('.', ',')} ‰</td>
@@ -611,7 +643,16 @@ function renderTable(data) {
     tbody.appendChild(tr);
   });
 
-  document.getElementById("resultatContainer").style.display = data.length > 0 ? "block" : "none";
+  const openResultsBtn = document.getElementById("openResultsBtn");
+  const resultsOverlay = document.getElementById("resultsOverlay");
+
+  if (openResultsBtn) {
+    openResultsBtn.style.display = data.length > 0 ? "block" : "none";
+  }
+
+  if (resultsOverlay && data.length === 0) {
+    resultsOverlay.style.display = "none";
+  }
 }
 
 // ==========================
@@ -634,22 +675,18 @@ function sortCurrentRowsByColumn(colIndex) {
         vB = b.objektiden || "";
         return vA.localeCompare(vB, "sv") * factor;
       case 1:
-        vA = a.fastighet || "";
-        vB = b.fastighet || "";
-        return vA.localeCompare(vB, "sv") * factor;
-      case 2:
         vA = a.verk || "";
         vB = b.verk || "";
         return vA.localeCompare(vB, "sv") * factor;
-      case 3:
+      case 2:
         vA = a.avstand || 0;
         vB = b.avstand || 0;
         return (vA - vB) * factor;
-      case 4:
+      case 3:
         vA = a.promille || 0;
         vB = b.promille || 0;
         return (vA - vB) * factor;
-      case 5:
+      case 4:
         vA = a.ersattning || 0;
         vB = b.ersattning || 0;
         return (vA - vB) * factor;
@@ -667,8 +704,6 @@ function sortCurrentRowsByColumn(colIndex) {
 async function loadDemoData() {
   try {
     updateIntaktPerVerk();
-    setStatus("turbineStatus", "Laddar...", "status-pill status-pending");
-    setStatus("residenceStatus", "Laddar...", "status-pill status-pending");
 
     const [turbineResponse, residenceResponse] = await Promise.all([
       fetch("data/turbines.geojson", { cache: "no-store" }),
@@ -692,8 +727,6 @@ async function loadDemoData() {
     processGeoJSON(residencesGeoJSON, "residence");
   } catch (error) {
     console.error(error);
-    setStatus("turbineStatus", "Fel", "status-pill status-error");
-    setStatus("residenceStatus", "Fel", "status-pill status-error");
 
     const summaryBox = document.getElementById("summaryBox");
     if (summaryBox) {
@@ -721,17 +754,114 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  const downloadBtn = document.getElementById("downloadExcel");
-  if (downloadBtn) {
-    downloadBtn.addEventListener("click", function () {
-      const table = document.getElementById("resultTable");
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.table_to_sheet(table);
-      XLSX.utils.book_append_sheet(wb, ws, "Ersättning");
-      XLSX.writeFile(wb, "ersattning_per_bostad_demo.xlsx");
-    });
-  }
+ const exportExcelBtn = document.getElementById("exportExcelBtn");
+if (exportExcelBtn) {
+  exportExcelBtn.addEventListener("click", function () {
+    if (typeof XLSX === "undefined") return;
 
-  updateIntaktPerVerk();
-  loadDemoData();
+    const residenceTableWrapper = document.getElementById("residenceTableWrapper");
+    const turbineTableWrapper = document.getElementById("turbineTableWrapper");
+
+    const showingResidenceTable =
+      residenceTableWrapper && residenceTableWrapper.style.display !== "none";
+
+    const table = showingResidenceTable
+      ? document.getElementById("resultTable")
+      : document.getElementById("turbineResultTable");
+
+    if (!table) return;
+
+    const sheetName = showingResidenceTable ? "Per bostad" : "Per verk";
+    const fileName = showingResidenceTable
+      ? "kompensa_resultat_per_bostad.xlsx"
+      : "kompensa_resultat_per_verk.xlsx";
+
+    const wb = XLSX.utils.table_to_book(table, { sheet: sheetName });
+    XLSX.writeFile(wb, fileName);
+  });
+}
+
+  const openResultsBtn = document.getElementById("openResultsBtn");
+  const closeResultsBtn = document.getElementById("closeResultsBtn");
+  const resultsOverlay = document.getElementById("resultsOverlay");
+  const showResidenceResultsBtn = document.getElementById("showResidenceResultsBtn");
+  const showTurbineResultsBtn = document.getElementById("showTurbineResultsBtn");
+  const residenceTableWrapper = document.getElementById("residenceTableWrapper");
+  const turbineTableWrapper = document.getElementById("turbineTableWrapper");
+  const resultsTitle = document.getElementById("resultsTitle");
+
+  function showResidenceTableView() {
+  if (residenceTableWrapper) residenceTableWrapper.style.display = "block";
+  if (turbineTableWrapper) turbineTableWrapper.style.display = "none";
+  if (resultsTitle) resultsTitle.textContent = "Resultat: Ersättning per bostad";
+
+  if (showResidenceResultsBtn) showResidenceResultsBtn.style.display = "none";
+  if (showTurbineResultsBtn) showTurbineResultsBtn.style.display = "inline-block";
+}
+
+function showTurbineTableView() {
+  if (residenceTableWrapper) residenceTableWrapper.style.display = "none";
+  if (turbineTableWrapper) turbineTableWrapper.style.display = "block";
+  if (resultsTitle) resultsTitle.textContent = "Resultat: Kostnad per verk";
+
+  if (showResidenceResultsBtn) showResidenceResultsBtn.style.display = "inline-block";
+  if (showTurbineResultsBtn) showTurbineResultsBtn.style.display = "none";
+}
+
+if (showResidenceResultsBtn) {
+  showResidenceResultsBtn.addEventListener("click", showResidenceTableView);
+}
+
+if (showTurbineResultsBtn) {
+  showTurbineResultsBtn.addEventListener("click", showTurbineTableView);
+}
+
+  if (openResultsBtn && closeResultsBtn && resultsOverlay) {
+  openResultsBtn.addEventListener("click", () => {
+    const isHidden =
+      resultsOverlay.style.display === "none" ||
+      resultsOverlay.style.display === "";
+
+    if (isHidden) {
+      resultsOverlay.style.display = "block";
+      showResidenceTableView();
+    } else {
+      resultsOverlay.style.display = "none";
+    }
+  });
+
+  closeResultsBtn.addEventListener("click", () => {
+    resultsOverlay.style.display = "none";
+  });
+  
+}
+const infoIconButtons = document.querySelectorAll(".info-icon-btn");
+
+infoIconButtons.forEach(button => {
+  button.addEventListener("click", function (event) {
+    event.stopPropagation();
+
+    const targetId = button.getAttribute("data-info-target");
+    const targetBox = document.getElementById(targetId);
+    if (!targetBox) return;
+
+    document.querySelectorAll(".info-tooltip-box").forEach(box => {
+      if (box !== targetBox) {
+        box.style.display = "none";
+      }
+    });
+
+    targetBox.style.display =
+      targetBox.style.display === "block" ? "none" : "block";
+  });
+});
+
+document.addEventListener("click", function () {
+  document.querySelectorAll(".info-tooltip-box").forEach(box => {
+    box.style.display = "none";
+  });
+});
+
+updateIntaktPerVerk();
+loadDemoData();
 });
