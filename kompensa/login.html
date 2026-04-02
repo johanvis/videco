@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logga in | Kompensa</title>
+
+  <!-- Kompensa CSS -->
+  <link rel="stylesheet" href="/kompensa/style.css" />
+</head>
+
+<body class="page-center">
+
+  <main class="card form-card">
+
+    <div class="brand">Videco</div>
+
+    <h1 class="form-title">Kompensa</h1>
+
+    <p class="subtitle">
+      Logga in för att öppna företagets projekt
+    </p>
+
+    <form onsubmit="handleLogin(event)">
+
+      <div class="form-group">
+        <label class="form-label" for="email">E-postadress</label>
+        <input class="input" type="email" id="email" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Lösenord</label>
+        <input class="input" type="password" id="password" required />
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          Logga in
+        </button>
+      </div>
+
+      <div id="error" style="display:none; margin-top:12px; color:#b91c1c; font-weight:600;">
+        Fel e-post eller lösenord
+      </div>
+
+    </form>
+
+    <div class="footer" style="margin-top:20px;">
+      <div>
+        <a href="mailto:hej@videco.se?subject=Återställ lösenord Kompensa">
+          Glömt lösenordet?
+        </a>
+      </div>
+      <div>
+        <a href="mailto:hej@videco.se?subject=Begär tillgång till Kompensa">
+          Begär tillgång
+        </a>
+      </div>
+    </div>
+
+    <div class="footer">
+      Utvecklat av <a href="/">Videco</a>
+    </div>
+
+  </main>
+
+  <script>
+    function handleLogin(event) {
+      event.preventDefault();
+
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      if (email === "test@videco.se" && password === "1234") {
+        window.location.href = "/kompensa/projekt/";
+      } else {
+        document.getElementById("error").style.display = "block";
+      }
+    }
+  </script>
+
+</body>
+</html>
