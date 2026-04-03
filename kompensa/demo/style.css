@@ -1,4 +1,11 @@
-html, body {
+/* =========================
+   KOMPENSA UI (APP)
+   Stable readable version
+   2026-04-03 09:40
+========================= */
+
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -18,8 +25,8 @@ body {
   left: 0;
   width: 100%;
   height: 70px;
-  background: rgba(47, 93, 58, 0.95);
-  color: white;
+  background: #2f5d3a;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -70,14 +77,14 @@ body {
   max-height: calc(100vh - 175px);
   overflow-y: auto;
   overflow-x: hidden;
-  background: rgba(255,255,255,0.92);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-radius: 12px;
   padding: 10px;
   z-index: 500;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
-  border: 1px solid rgba(217, 224, 214, 0.95);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border: 1px solid #d9e0d6;
 }
 
 .map-menu::-webkit-scrollbar {
@@ -117,9 +124,9 @@ body {
 .menu-group summary {
   cursor: pointer;
   list-style: none;
-  padding: 9px 10px;
+  padding: 10px 10px;
   font-weight: 700;
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   background: #f7faf6;
   color: #1f2a1f;
 }
@@ -135,11 +142,13 @@ body {
 .menu-content {
   padding: 9px 10px 10px;
   font-size: 0.86rem;
+  color: #1f2a1f;
 }
 
 .menu-item {
   padding: 8px 0;
   border-bottom: 1px solid #f0f2ef;
+  color: #1f2a1f;
 }
 
 .menu-item:last-child {
@@ -165,6 +174,7 @@ body {
 
 .status-label {
   font-weight: 700;
+  color: #1f2a1f;
 }
 
 .status-pill {
@@ -205,28 +215,30 @@ body {
   overflow: auto;
 }
 
+/* =========================
+   LEAFLET POPUP – GLASS
+========================= */
+
 .leaflet-popup-content-wrapper {
-  background: rgba(255, 255, 255, 0.82) !important;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(10px) saturate(135%);
+  -webkit-backdrop-filter: blur(10px) saturate(135%);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14) !important;
 }
 
 .leaflet-popup-content {
   background: transparent !important;
+  color: #1f2a1f !important;
+  font-weight: 500;
 }
 
 .leaflet-popup-tip {
-  background: rgba(255,255,255,0.82) !important;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(255, 255, 255, 0.38) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: none !important;
-}
-
-.leaflet-popup-content p,
-.leaflet-popup-content {
-  color: #000 !important;
 }
 
 .leaflet-control-zoom {
@@ -301,10 +313,6 @@ body {
   box-shadow: 0 4px 10px rgba(47, 93, 58, 0.25);
 }
 
-.results-toggle-btn:hover {
-  background: rgba(255,255,255,0.98);
-}
-
 .results-header-actions {
   display: flex;
   align-items: center;
@@ -333,7 +341,7 @@ body {
   right: 20px;
   bottom: 20px;
   z-index: 700;
-  background: rgba(255,255,255,0.22);
+  background: rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-radius: 16px;
@@ -342,12 +350,12 @@ body {
 .results-modal {
   width: 100%;
   height: 100%;
-  background: rgba(255,255,255,0.78);
+  background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(217, 224, 214, 0.95);
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   padding: 18px;
   overflow: auto;
 }
@@ -362,16 +370,17 @@ body {
 
 .results-modal-header h3 {
   margin: 0;
+  color: #1f2a1f;
 }
 
 .export-btn {
   margin-right: 10px;
   border: none;
   background: linear-gradient(135deg, #3a6ea5, #4a86c5);
-  color: white;
+  color: #ffffff;
   border-radius: 10px;
   padding: 10px 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -382,6 +391,7 @@ body {
   border-radius: 10px;
   padding: 8px 12px;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .results-close-btn:hover {

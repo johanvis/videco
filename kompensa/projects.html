@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <title>Kompensa – Projekt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Global styling för hela Videco -->
+  <link rel="stylesheet" href="../global.css">
+
+  <!-- App-specifik styling för Kompensa -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="kompensa-projects-page">
+
+  <main class="projects-page">
+    <section class="projects-header">
+      <div>
+        <p class="projects-eyebrow">Kompensa</p>
+        <h1>Projekt</h1>
+        <p class="projects-subtitle">
+          Här hanterar du dina analyser och öppnar tidigare projekt.
+        </p>
+      </div>
+    </section>
+
+    <section id="empty-state" class="empty-state" style="display: none;">
+      <div class="empty-state-card">
+        <div class="empty-state-icon">+</div>
+        <h2>Inga projekt än</h2>
+        <p>
+          Skapa ditt första projekt för att analysera närboendeersättning.
+        </p>
+        <button id="create-project-btn" class="primary-btn" type="button">
+          Analysera nytt projekt
+        </button>
+      </div>
+    </section>
+
+    <section id="projects-section" class="projects-section" style="display: none;">
+      <div class="projects-grid" id="projects-grid">
+        
+        <!-- Nytt projekt-kort -->
+        <button class="project-card create-card" id="create-project-card" type="button">
+          <div class="create-card-icon">+</div>
+          <div class="create-card-text">
+            <h2>Analysera nytt projekt</h2>
+            <p>Skapa ett nytt projekt och starta en analys.</p>
+          </div>
+        </button>
+
+        <!-- Befintliga projekt injiceras här -->
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ============================
+    // MOCK DATA
+    // Testa [] för att se empty state
+    // ============================
+    const projects = [
+      {
+        id: 1,
+        name: "Projekt Alpha",
+        updatedAt: "2026-03-20",
+        company: "Bolag X"
+      },
+      {
+        id: 2,
+        name: "Projekt Beta",
+        updatedAt: "2026-03-15",
+        company: "Bolag X"
+      }
+    ];
+
+    // ============================
+    // ELEMENT
+    // ============================
+    const emptyState = document.getElementById("empty-state");
+    const projectsSection = document.getElementById("projects-section");
+    const projectsGrid = document.getElementById("projects-grid");
+    const createProjectBtn = document.getElementById("create-project-btn");
+    const createProjectCard = document.getElementById("create-project-card");
+
+    // ============================
+    // INIT
+    // ============================
+    function initProjectsPage() {
+      if (projects.length === 0) {
+        emptyState.style.display = "flex";
+      } else {
+        projectsSection.style.display = "block";
+        renderProjects();
+      }
+    }
+
+    // ============================
+    // FORMAT DATE
+    // ============================
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("sv-SE");
+    }
+
+    // ============================
+    // RENDER PROJECTS
+    // ============================
+    function renderProjects() {
+      projects.forEach(project => {
+        const projectCard = document.createElement("button");
+        projectCard.type = "button";
+        projectCard.className = "project-card existing-project-card";
+
+        projectCard.innerHTML = `
+          <div class="project-card-top">
+            <span class="project-badge">Projekt</span>
+          </div>
+
+          <div class="project-card-body">
+            <h3>${project.name}</h3>
+            <p class="project-meta">Företag: ${project.company}</p>
+            <p class="project-meta">Senast ändrad: ${formatDate(project.updatedAt)}</p>
+          </div>
+        `;
+
+        projectCard.addEventListener("click", () => {
+          alert("Öppnar projekt: " + project.name);
+          // Senare:
+          // window.location.href = "project.html?id=" + project.id;
+        });
+
+        projectsGrid.appendChild(projectCard);
+      });
+    }
+
+    // ============================
+    // CREATE NEW PROJECT
+    // ============================
+    function handleCreateProject() {
+      alert("Starta nytt projekt");
+      // Senare:
+      // window.location.href = "create-project.html";
+    }
+
+    createProjectBtn?.addEventListener("click", handleCreateProject);
+    createProjectCard?.addEventListener("click", handleCreateProject);
+
+    // ============================
+    // START
+    // ============================
+    initProjectsPage();
+  </script>
+</body>
+</html>

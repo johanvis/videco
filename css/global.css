@@ -1,22 +1,39 @@
 /* =========================
-   GLOBAL / VIDECO / KOMPENSA
-   2026-04-02
+   GLOBAL / VIDECO
+   Clean system palette v1
 ========================= */
 
 :root {
-  --bg: #f7f8f5;
-  --bg-soft: #eef2ec;
-  --surface: rgba(255, 255, 255, 0.88);
-  --surface-solid: #ffffff;
-  --text: #1f2a1f;
-  --muted: #5f6b5f;
-  --primary: #2f5d3a;
-  --primary-hover: #264c2f;
-  --border: #d9e0d6;
+  /* ===== BACKGROUND ===== */
+  --bg: #F7F9F8;
+  --bg-soft: #EEF3F0;
+
+  /* ===== SURFACES ===== */
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-solid: #FFFFFF;
+
+  /* ===== TEXT ===== */
+  --text: #1A1F1C;
+  --muted: #5F6B63;
+
+  /* ===== BRAND (VIDECO) ===== */
+  --primary: #1F3D2B;
+  --primary-hover: #244D3A;
+
+  /* ===== ACCENT (default = Videco green) ===== */
+  --accent: #3F7A4C;
+
+  /* ===== UI ===== */
+  --border: #D8E0DB;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+
+  /* ===== RADIUS / LAYOUT ===== */
   --radius: 18px;
+  --radius-sm: 12px;
   --max-width: 760px;
 }
+
+/* ========================= */
 
 * {
   box-sizing: border-box;
@@ -49,7 +66,7 @@ a {
 }
 
 /* =========================
-   GENERIC LAYOUT
+   LAYOUT
 ========================= */
 
 .page-center {
@@ -71,7 +88,7 @@ a {
 }
 
 /* =========================
-   BRAND / TYPO
+   BRAND
 ========================= */
 
 .brand {
@@ -82,6 +99,10 @@ a {
   color: var(--primary);
   margin-bottom: 18px;
 }
+
+/* =========================
+   TYPOGRAPHY
+========================= */
 
 .hero-title {
   margin: 0 0 14px;
@@ -136,10 +157,9 @@ a {
 .btn {
   display: inline-block;
   padding: 14px 26px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   font-weight: 700;
   font-size: 1rem;
-  text-decoration: none;
   transition: 0.2s ease;
   border: 1px solid transparent;
   min-width: 160px;
@@ -156,6 +176,7 @@ a {
   transform: translateY(-1px);
 }
 
+/* 👉 Secondary använder accent istället för random färg */
 .btn-secondary {
   background: var(--surface-solid);
   color: var(--text);
@@ -163,12 +184,12 @@ a {
 }
 
 .btn-secondary:hover {
-  background: #f2f5f1;
+  background: #F2F6F3;
   transform: translateY(-1px);
 }
 
 /* =========================
-   FORMS / LOGIN
+   FORMS
 ========================= */
 
 .form-card {
@@ -178,8 +199,6 @@ a {
 .form-title {
   margin: 0 0 10px;
   font-size: clamp(2rem, 4vw, 2.8rem);
-  line-height: 1.1;
-  letter-spacing: -0.03em;
   text-align: center;
 }
 
@@ -188,8 +207,6 @@ a {
   max-width: 520px;
   text-align: center;
   color: var(--muted);
-  font-size: 1rem;
-  line-height: 1.6;
 }
 
 .form-group {
@@ -199,63 +216,22 @@ a {
 .form-label {
   display: block;
   margin-bottom: 8px;
-  font-size: 0.95rem;
   font-weight: 700;
-  color: var(--text);
 }
 
 .input {
   width: 100%;
-  padding: 14px 14px;
-  border-radius: 12px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: #ffffff;
-  color: var(--text);
   font-size: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.input::placeholder {
-  color: #8a948a;
 }
 
 .input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(47, 93, 58, 0.12);
-}
-
-.form-actions {
-  margin-top: 22px;
-}
-
-.form-actions .btn {
-  width: 100%;
-}
-
-.form-meta {
-  margin-top: 18px;
-  text-align: center;
-  font-size: 0.95rem;
-  color: var(--muted);
-}
-
-.form-meta a {
-  color: var(--primary);
-  font-weight: 700;
-}
-
-.form-meta a:hover {
-  text-decoration: underline;
-}
-
-/* =========================
-   KOMPENSA LANDING
-========================= */
-
-.kompensa-landing .card {
-  padding: 56px 40px;
-  text-align: center;
+  box-shadow: 0 0 0 3px rgba(31, 61, 43, 0.12);
 }
 
 /* =========================
@@ -267,7 +243,7 @@ a {
     padding: 24px 16px;
   }
 
-  .kompensa-landing .card,
+  .card,
   .form-card {
     padding: 40px 22px;
   }
