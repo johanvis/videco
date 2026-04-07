@@ -33,7 +33,7 @@ const mapboxSatellite = L.tileLayer(
     tileSize: 512,
     zoomOffset: -1,
     id: 'mapbox/satellite-streets-v12',
-    accessToken: 'DIN_MAPBOX_TOKEN'
+    accessToken: 'pk.eyJ1IjoiZ2lzam9oYW4iLCJhIjoiY21ub2UxaHB3MXg2eTJycXRxYXg2OTg3NSJ9.OdyF-gw55kaOot9eHxVjNA'
   }
 );
 
