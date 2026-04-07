@@ -4,9 +4,50 @@
 let map = L.map('map').setView([62.0, 15.0], 5);
 L.control.scale({ position: 'bottomright', imperial: false }).addTo(map);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+// ==========================
+// Bakgrundskartor
+// ==========================
+
+// OpenStreetMap som gratis fallback
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap contributors'
-}).addTo(map);
+});
+
+// Mapbox Streets
+const mapboxStreets = L.tileLayer(
+  'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
+  {
+    attribution: '© Mapbox © OpenStreetMap',
+    tileSize: 512,
+    zoomOffset: -1,
+    id: 'mapbox/streets-v12',
+    accessToken: 'DIN_MAPBOX_TOKEN'
+  }
+);
+
+// Mapbox Satellite
+const mapboxSatellite = L.tileLayer(
+  'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
+  {
+    attribution: '© Mapbox © OpenStreetMap',
+    tileSize: 512,
+    zoomOffset: -1,
+    id: 'mapbox/satellite-streets-v12',
+    accessToken: 'DIN_MAPBOX_TOKEN'
+  }
+);
+
+// Låt Mapbox Satellite vara standard i demo
+mapboxSatellite.addTo(map);
+
+// Lagerkontroll
+const baseMaps = {
+  'Mapbox Satellite': mapboxSatellite,
+  'Mapbox Streets': mapboxStreets,
+  'OpenStreetMap': osm
+};
+
+L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
 
 let turbinesLayer, residencesLayer;
 let currentRows = [];
