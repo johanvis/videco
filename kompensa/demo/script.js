@@ -38,7 +38,7 @@ const mapboxSatellite = L.tileLayer(
 );
 
 // Låt Mapbox Satellite vara standard i demo
-mapboxSatellite.addTo(map);
+osm.addTo(map);
 
 // Lagerkontroll
 const baseMaps = {
