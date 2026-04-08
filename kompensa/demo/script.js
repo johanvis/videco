@@ -7,44 +7,56 @@ L.control.scale({ position: 'bottomright', imperial: false }).addTo(map);
 // ==========================
 // Bakgrundskartor
 // ==========================
+const MAPBOX_TOKEN = 'pk.eyJ1IjoiZ2lzam9oYW4iLCJhIjoiY21ub2UxaHB3MXg2eTJycXRxYXg2OTg3NSJ9.OdyF-gw55kaOot9eHxVjNA';
 
-// OpenStreetMap som gratis fallback
 const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors'
+  attribution: '&copy; OpenStreetMap contributors',
+  maxZoom: 19
 });
 
-// Mapbox Streets
 const mapboxStreets = L.tileLayer(
-  'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
+  `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/512/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`,
   {
     attribution: '© Mapbox © OpenStreetMap',
     tileSize: 512,
     zoomOffset: -1,
-    id: 'mapbox/streets-v12',
-    accessToken: 'pk.eyJ1IjoiZ2lzam9oYW4iLCJhIjoiY21ub2UxaHB3MXg2eTJycXRxYXg2OTg3NSJ9.OdyF-gw55kaOot9eHxVjNA'
+    maxZoom: 20,
+    updateWhenZooming: false,
+    updateWhenIdle: true,
+    keepBuffer: 4
   }
 );
 
-// Mapbox Satellite
 const mapboxSatellite = L.tileLayer(
-  'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
+  `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/512/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`,
   {
     attribution: '© Mapbox © OpenStreetMap',
     tileSize: 512,
     zoomOffset: -1,
-    id: 'mapbox/satellite-streets-v12',
-    accessToken: 'pk.eyJ1IjoiZ2lzam9oYW4iLCJhIjoiY21ub2UxaHB3MXg2eTJycXRxYXg2OTg3NSJ9.OdyF-gw55kaOot9eHxVjNA'
+    maxZoom: 20,
+    updateWhenZooming: false,
+    updateWhenIdle: true,
+    keepBuffer: 4
   }
 );
 
-// Låt Mapbox Satellite vara standard i demo
+// Debugga tilefel
+mapboxStreets.on('tileerror', function (e) {
+  console.error('Mapbox Streets tile error:', e.tile?.src || e);
+});
+
+mapboxSatellite.on('tileerror', function (e) {
+  console.error('Mapbox Satellite tile error:', e.tile?.src || e);
+});
+
+// OSM som standard tills Mapbox är verifierat
 osm.addTo(map);
 
 // Lagerkontroll
 const baseMaps = {
-  'Mapbox Satellite': mapboxSatellite,
+  'OpenStreetMap': osm,
   'Mapbox Streets': mapboxStreets,
-  'OpenStreetMap': osm
+  'Mapbox Satellite': mapboxSatellite
 };
 
 L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
