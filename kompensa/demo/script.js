@@ -191,9 +191,14 @@ function addTurbineHoverBehavior(feature, layer) {
     if (isNaN(H) || H <= 0) return;
 
     const center = layer.getLatLng();
+    const turbineName = getTurbineId(feature.properties) || "Verk";
     const multipliers = [5, 6, 7, 8, 9];
     const opacities = [0.35, 0.25, 0.18, 0.12, 0.06];
 
+    // Rensa gamla ringar/etiketter om de redan finns
+    if (layer._rings) {
+      layer._rings.forEach(obj => map.removeLayer(obj));
+    }
     layer._rings = [];
 
     multipliers.forEach((m, idx) => {
@@ -205,15 +210,36 @@ function addTurbineHoverBehavior(feature, layer) {
         fillOpacity: opacities[idx],
         dashArray: idx === 0 ? null : "4"
       }).addTo(map);
+
       layer._rings.push(circle);
     });
 
+    // Lägg en etikett ovanför verket
+    const label = L.tooltip({
+      permanent: true,
+      direction: 'top',
+      offset: [0, -10],
+      className: 'turbine-label'
+    })
+      .setLatLng(center)
+      .setContent(String(turbineName))
+      .addTo(map);
+
+    // Spara etiketten så att den också tas bort vid mouseout
+    layer._rings.push(label);
+
     if (residencesLayer) {
       const residences = residencesLayer.getLayers();
-      layer._originalIcons = new Map();
+
+      if (!layer._originalIcons) {
+        layer._originalIcons = new Map();
+      } else {
+        layer._originalIcons.clear();
+      }
 
       residences.forEach(resLayer => {
         if (!resLayer.getLatLng) return;
+
         const d = map.distance(center, resLayer.getLatLng());
         const promille = getPromilleForDistance(d, H);
 
@@ -229,7 +255,7 @@ function addTurbineHoverBehavior(feature, layer) {
 
   layer.on("mouseout", function () {
     if (layer._rings) {
-      layer._rings.forEach(c => map.removeLayer(c));
+      layer._rings.forEach(obj => map.removeLayer(obj));
       layer._rings = [];
     }
 
@@ -255,7 +281,9 @@ function addTurbineHoverBehavior(feature, layer) {
 
     matching.forEach((tr, idx) => {
       tr.classList.add("highlight-row");
-      if (idx === 0) tr.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (idx === 0) {
+        tr.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     });
 
     setTimeout(() => {
@@ -287,10 +315,12 @@ function getFirstCoordinate(geojson) {
     const t = geom.type;
     const c = geom.coordinates;
     if (!c) return null;
+
     if (t === "Point") return c;
     if (t === "MultiPoint" || t === "LineString") return c[0];
     if (t === "MultiLineString" || t === "Polygon") return c[0] && c[0][0];
     if (t === "MultiPolygon") return c[0] && c[0][0] && c[0][0][0];
+
     if (t === "GeometryCollection" && Array.isArray(geom.geometries)) {
       for (const g of geom.geometries) {
         const res = fromGeom(g);
@@ -310,6 +340,7 @@ function getFirstCoordinate(geojson) {
       if (res) return res;
     }
   }
+
   return null;
 }
 
@@ -321,6 +352,7 @@ function detectCrsFromGeoJSON(geojson) {
   if (name.includes("3006") || (name.includes("SWEREF") && name.includes("TM"))) {
     return "EPSG:3006";
   }
+
   return null;
 }
 
@@ -336,6 +368,7 @@ function reprojectGeoJSON(geojson, fromCrs, toCrs = "EPSG:4326") {
 
   function reprojectGeometry(geom) {
     if (!geom) return geom;
+
     const type = geom.type;
 
     if (type === "Point") {
@@ -349,18 +382,23 @@ function reprojectGeoJSON(geojson, fromCrs, toCrs = "EPSG:4326") {
     } else if (type === "GeometryCollection" && Array.isArray(geom.geometries)) {
       geom.geometries.forEach(g => reprojectGeometry(g));
     }
+
     return geom;
   }
 
   function process(obj) {
     if (!obj) return obj;
+
     if (obj.type === "FeatureCollection" && Array.isArray(obj.features)) {
-      obj.features.forEach(f => { if (f.geometry) reprojectGeometry(f.geometry); });
+      obj.features.forEach(f => {
+        if (f.geometry) reprojectGeometry(f.geometry);
+      });
     } else if (obj.type === "Feature" && obj.geometry) {
       reprojectGeometry(obj.geometry);
     } else if (!obj.type && typeof obj === "object") {
       Object.values(obj).forEach(v => process(v));
     }
+
     return obj;
   }
 
@@ -410,6 +448,7 @@ function processGeoJSON(rawGeoJSON, type) {
         icon: type === "turbine" ? turbineIcon : houseIcon
       });
     },
+
     onEachFeature: function (feature, layer) {
       if (type === "turbine") {
         addTurbineHoverBehavior(feature, layer);
@@ -454,7 +493,8 @@ function processGeoJSON(rawGeoJSON, type) {
           });
 
           const objektId = getResidenceId(feature.properties) || "Okänt ID";
-          const popupText = `<b>Objekt-ID:</b> ${objektId}<br>` +
+          const popupText =
+            `<b>Objekt-ID:</b> ${objektId}<br>` +
             relevant.map(n => `${getTurbineId(n.feature.properties) || "Verk"}: ${Math.round(n.dist)} m`).join("<br>");
 
           layer.bindPopup(popupText).openPopup();
@@ -482,7 +522,9 @@ function processGeoJSON(rawGeoJSON, type) {
 
           matchRows.forEach((row, index) => {
             row.classList.add("highlight-row");
-            if (index === 0) row.scrollIntoView({ behavior: "smooth", block: "center" });
+            if (index === 0) {
+              row.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
           });
 
           setTimeout(() => {
@@ -493,24 +535,26 @@ function processGeoJSON(rawGeoJSON, type) {
     }
   });
 
- if (type === "turbine") {
-  if (turbinesLayer) map.removeLayer(turbinesLayer);
-  turbinesLayer = layer;
+  if (type === "turbine") {
+    if (turbinesLayer) map.removeLayer(turbinesLayer);
+    turbinesLayer = layer;
 
-  const antalVerkEl = document.getElementById("antalVerk");
-  if (antalVerkEl) antalVerkEl.textContent = geojson.features.length;
+    const antalVerkEl = document.getElementById("antalVerk");
+    if (antalVerkEl) {
+      antalVerkEl.textContent = geojson.features.length;
+    }
 
-  updateIntaktPerVerk();
+    updateIntaktPerVerk();
 
-  // Säkerställ rätt ikon för aktuellt bakgrundslager
-  if (map.hasLayer(mapboxSatellite)) {
-    updateTurbineIconsForBaselayer('Mapbox Satellite');
-  } else if (map.hasLayer(mapboxStreets)) {
-    updateTurbineIconsForBaselayer('Mapbox Streets');
-  } else {
-    updateTurbineIconsForBaselayer('OpenStreetMap');
+    // Säkerställ rätt ikon för aktuellt bakgrundslager
+    if (map.hasLayer(mapboxSatellite)) {
+      updateTurbineIconsForBaselayer('Mapbox Satellite');
+    } else if (map.hasLayer(mapboxStreets)) {
+      updateTurbineIconsForBaselayer('Mapbox Streets');
+    } else {
+      updateTurbineIconsForBaselayer('OpenStreetMap');
+    }
   }
-}
 
   if (type === "residence") {
     if (residencesLayer) map.removeLayer(residencesLayer);
@@ -519,18 +563,18 @@ function processGeoJSON(rawGeoJSON, type) {
 
   layer.addTo(map);
 
-if (turbinesLayer) {
-  map.fitBounds(turbinesLayer.getBounds(), {
-    padding: [30, 30],
-    maxZoom: 14
-  });
+  if (turbinesLayer) {
+    map.fitBounds(turbinesLayer.getBounds(), {
+      padding: [30, 30],
+      maxZoom: 14
+    });
 
-  // Spara zoomnivån som husen ska vara synliga från och uppåt
-  residencesMinZoom = map.getZoom();
-}
+    // Spara zoomnivån som husen ska vara synliga från och uppåt
+    residencesMinZoom = map.getZoom();
+  }
 
-updateResidenceVisibility();
-autoCalculate();
+  updateResidenceVisibility();
+  autoCalculate();
 }
 
 // ==========================
@@ -782,6 +826,7 @@ function sortCurrentRowsByColumn(colIndex) {
 
   currentRows.sort((a, b) => {
     let vA, vB;
+
     switch (colIndex) {
       case 0:
         vA = a.objektiden || "";
@@ -833,8 +878,15 @@ async function loadDemoData() {
     let turbinesGeoJSON = await turbineResponse.json();
     let residencesGeoJSON = await residenceResponse.json();
 
-    turbinesGeoJSON = maybeReprojectGeoJSON(turbinesGeoJSON, detectCrsFromGeoJSON(turbinesGeoJSON));
-    residencesGeoJSON = maybeReprojectGeoJSON(residencesGeoJSON, detectCrsFromGeoJSON(residencesGeoJSON));
+    turbinesGeoJSON = maybeReprojectGeoJSON(
+      turbinesGeoJSON,
+      detectCrsFromGeoJSON(turbinesGeoJSON)
+    );
+
+    residencesGeoJSON = maybeReprojectGeoJSON(
+      residencesGeoJSON,
+      detectCrsFromGeoJSON(residencesGeoJSON)
+    );
 
     processGeoJSON(turbinesGeoJSON, "turbine");
     processGeoJSON(residencesGeoJSON, "residence");
@@ -867,32 +919,32 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
- const exportExcelBtn = document.getElementById("exportExcelBtn");
-if (exportExcelBtn) {
-  exportExcelBtn.addEventListener("click", function () {
-    if (typeof XLSX === "undefined") return;
+  const exportExcelBtn = document.getElementById("exportExcelBtn");
+  if (exportExcelBtn) {
+    exportExcelBtn.addEventListener("click", function () {
+      if (typeof XLSX === "undefined") return;
 
-    const residenceTableWrapper = document.getElementById("residenceTableWrapper");
-    const turbineTableWrapper = document.getElementById("turbineTableWrapper");
+      const residenceTableWrapper = document.getElementById("residenceTableWrapper");
+      const turbineTableWrapper = document.getElementById("turbineTableWrapper");
 
-    const showingResidenceTable =
-      residenceTableWrapper && residenceTableWrapper.style.display !== "none";
+      const showingResidenceTable =
+        residenceTableWrapper && residenceTableWrapper.style.display !== "none";
 
-    const table = showingResidenceTable
-      ? document.getElementById("resultTable")
-      : document.getElementById("turbineResultTable");
+      const table = showingResidenceTable
+        ? document.getElementById("resultTable")
+        : document.getElementById("turbineResultTable");
 
-    if (!table) return;
+      if (!table) return;
 
-    const sheetName = showingResidenceTable ? "Per bostad" : "Per verk";
-    const fileName = showingResidenceTable
-      ? "kompensa_resultat_per_bostad.xlsx"
-      : "kompensa_resultat_per_verk.xlsx";
+      const sheetName = showingResidenceTable ? "Per bostad" : "Per verk";
+      const fileName = showingResidenceTable
+        ? "kompensa_resultat_per_bostad.xlsx"
+        : "kompensa_resultat_per_verk.xlsx";
 
-    const wb = XLSX.utils.table_to_book(table, { sheet: sheetName });
-    XLSX.writeFile(wb, fileName);
-  });
-}
+      const wb = XLSX.utils.table_to_book(table, { sheet: sheetName });
+      XLSX.writeFile(wb, fileName);
+    });
+  }
 
   const openResultsBtn = document.getElementById("openResultsBtn");
   const closeResultsBtn = document.getElementById("closeResultsBtn");
@@ -904,80 +956,81 @@ if (exportExcelBtn) {
   const resultsTitle = document.getElementById("resultsTitle");
 
   function showResidenceTableView() {
-  if (residenceTableWrapper) residenceTableWrapper.style.display = "block";
-  if (turbineTableWrapper) turbineTableWrapper.style.display = "none";
-  if (resultsTitle) resultsTitle.textContent = "Resultat: Ersättning per bostad";
+    if (residenceTableWrapper) residenceTableWrapper.style.display = "block";
+    if (turbineTableWrapper) turbineTableWrapper.style.display = "none";
+    if (resultsTitle) resultsTitle.textContent = "Resultat: Ersättning per bostad";
 
-  if (showResidenceResultsBtn) showResidenceResultsBtn.style.display = "none";
-  if (showTurbineResultsBtn) showTurbineResultsBtn.style.display = "inline-block";
-}
+    if (showResidenceResultsBtn) showResidenceResultsBtn.style.display = "none";
+    if (showTurbineResultsBtn) showTurbineResultsBtn.style.display = "inline-block";
+  }
 
-function showTurbineTableView() {
-  if (residenceTableWrapper) residenceTableWrapper.style.display = "none";
-  if (turbineTableWrapper) turbineTableWrapper.style.display = "block";
-  if (resultsTitle) resultsTitle.textContent = "Resultat: Kostnad per verk";
+  function showTurbineTableView() {
+    if (residenceTableWrapper) residenceTableWrapper.style.display = "none";
+    if (turbineTableWrapper) turbineTableWrapper.style.display = "block";
+    if (resultsTitle) resultsTitle.textContent = "Resultat: Kostnad per verk";
 
-  if (showResidenceResultsBtn) showResidenceResultsBtn.style.display = "inline-block";
-  if (showTurbineResultsBtn) showTurbineResultsBtn.style.display = "none";
-}
+    if (showResidenceResultsBtn) showResidenceResultsBtn.style.display = "inline-block";
+    if (showTurbineResultsBtn) showTurbineResultsBtn.style.display = "none";
+  }
 
-if (showResidenceResultsBtn) {
-  showResidenceResultsBtn.addEventListener("click", showResidenceTableView);
-}
+  if (showResidenceResultsBtn) {
+    showResidenceResultsBtn.addEventListener("click", showResidenceTableView);
+  }
 
-if (showTurbineResultsBtn) {
-  showTurbineResultsBtn.addEventListener("click", showTurbineTableView);
-}
+  if (showTurbineResultsBtn) {
+    showTurbineResultsBtn.addEventListener("click", showTurbineTableView);
+  }
 
   if (openResultsBtn && closeResultsBtn && resultsOverlay) {
-  openResultsBtn.addEventListener("click", () => {
-    const isHidden =
-      resultsOverlay.style.display === "none" ||
-      resultsOverlay.style.display === "";
+    openResultsBtn.addEventListener("click", () => {
+      const isHidden =
+        resultsOverlay.style.display === "none" ||
+        resultsOverlay.style.display === "";
 
-    if (isHidden) {
-      resultsOverlay.style.display = "block";
-      showResidenceTableView();
-    } else {
-      resultsOverlay.style.display = "none";
-    }
-  });
-
-  closeResultsBtn.addEventListener("click", () => {
-    resultsOverlay.style.display = "none";
-  });
-  
-}
-const infoIconButtons = document.querySelectorAll(".info-icon-btn");
-
-infoIconButtons.forEach(button => {
-  button.addEventListener("click", function (event) {
-    event.stopPropagation();
-
-    const targetId = button.getAttribute("data-info-target");
-    const targetBox = document.getElementById(targetId);
-    if (!targetBox) return;
-
-    document.querySelectorAll(".info-tooltip-box").forEach(box => {
-      if (box !== targetBox) {
-        box.style.display = "none";
+      if (isHidden) {
+        resultsOverlay.style.display = "block";
+        showResidenceTableView();
+      } else {
+        resultsOverlay.style.display = "none";
       }
     });
 
-    targetBox.style.display =
-      targetBox.style.display === "block" ? "none" : "block";
-  });
-});
+    closeResultsBtn.addEventListener("click", () => {
+      resultsOverlay.style.display = "none";
+    });
+  }
 
-document.addEventListener("click", function () {
-  document.querySelectorAll(".info-tooltip-box").forEach(box => {
-    box.style.display = "none";
-  });
-});
-map.on("zoomend", function () {
-  updateResidenceVisibility();
-});
+  const infoIconButtons = document.querySelectorAll(".info-icon-btn");
 
-updateIntaktPerVerk();
-loadDemoData();
+  infoIconButtons.forEach(button => {
+    button.addEventListener("click", function (event) {
+      event.stopPropagation();
+
+      const targetId = button.getAttribute("data-info-target");
+      const targetBox = document.getElementById(targetId);
+      if (!targetBox) return;
+
+      document.querySelectorAll(".info-tooltip-box").forEach(box => {
+        if (box !== targetBox) {
+          box.style.display = "none";
+        }
+      });
+
+      targetBox.style.display =
+        targetBox.style.display === "block" ? "none" : "block";
+    });
+  });
+
+  document.addEventListener("click", function () {
+    document.querySelectorAll(".info-tooltip-box").forEach(box => {
+      box.style.display = "none";
+    });
+  });
+
+  map.on("zoomend", function () {
+    updateResidenceVisibility();
+  });
+
+  updateIntaktPerVerk();
+  loadDemoData();
 });

@@ -394,6 +394,25 @@ body {
   cursor: pointer;
 }
 
+.turbine-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 13px;
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     0 0 4px #000;
+}
+
+.turbine-label::before {
+  display: none !important;
+}
+
 .results-close-btn:hover {
   background: #f4f7f3;
 }
