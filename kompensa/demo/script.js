@@ -61,8 +61,13 @@ const baseMaps = {
 
 L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
 
+map.on('baselayerchange', function (e) {
+  updateTurbineIconsForBaselayer(e.name);
+});
+
 let turbinesLayer, residencesLayer;
 let currentRows = [];
+let residencesMinZoom = null;
 
 // För 2 %-tak
 let capFactor = 1;
@@ -83,23 +88,65 @@ if (typeof proj4 !== "undefined") {
 // ==========================
 // Ikoner
 // ==========================
-const turbineIcon = L.icon({
+const turbineIconDefault = L.icon({
   iconUrl: 'icons/turbine.png',
-  iconSize: [26, 26],
-  iconAnchor: [13, 13]
+  iconSize: [50, 50],
+  iconAnchor: [25, 25]
 });
+
+const turbineIconWhite = L.icon({
+  iconUrl: 'icons/white_turbine.png',
+  iconSize: [50, 50],
+  iconAnchor: [25, 25]
+});
+
+// Den ikon som används just nu
+let turbineIcon = turbineIconDefault;
 
 const houseIcon = L.icon({
   iconUrl: 'icons/house.png',
-  iconSize: [26, 26],
-  iconAnchor: [13, 13]
+  iconSize: [30, 30],
+  iconAnchor: [15, 15]
 });
 
 const houseAffectedIcon = L.icon({
   iconUrl: 'icons/house_affected.png',
-  iconSize: [26, 26],
-  iconAnchor: [13, 13]
+  iconSize: [30, 30],
+  iconAnchor: [15, 15]
 });
+
+// ==========================
+// Funktion för att byta ikon beroende på bakgrundskarta
+// ==========================
+function updateTurbineIconsForBaselayer(layerName) {
+  const useWhiteIcon = layerName === 'Mapbox Satellite';
+  turbineIcon = useWhiteIcon ? turbineIconWhite : turbineIconDefault;
+
+  if (!turbinesLayer) return;
+
+  turbinesLayer.eachLayer(layer => {
+    if (layer instanceof L.Marker) {
+      layer.setIcon(turbineIcon);
+    }
+  });
+}
+
+// ==========================
+// Funktion för att få husikoner att försvinna efter en viss utzoomning
+// ==========================
+function updateResidenceVisibility() {
+  if (!residencesLayer || residencesMinZoom === null) return;
+
+  if (map.getZoom() < residencesMinZoom) {
+    if (map.hasLayer(residencesLayer)) {
+      map.removeLayer(residencesLayer);
+    }
+  } else {
+    if (!map.hasLayer(residencesLayer)) {
+      map.addLayer(residencesLayer);
+    }
+  }
+}
 
 // ==========================
 // Hjälpfunktioner
@@ -446,15 +493,24 @@ function processGeoJSON(rawGeoJSON, type) {
     }
   });
 
-  if (type === "turbine") {
-    if (turbinesLayer) map.removeLayer(turbinesLayer);
-    turbinesLayer = layer;
+ if (type === "turbine") {
+  if (turbinesLayer) map.removeLayer(turbinesLayer);
+  turbinesLayer = layer;
 
-    const antalVerkEl = document.getElementById("antalVerk");
-    if (antalVerkEl) antalVerkEl.textContent = geojson.features.length;
+  const antalVerkEl = document.getElementById("antalVerk");
+  if (antalVerkEl) antalVerkEl.textContent = geojson.features.length;
 
-    updateIntaktPerVerk();
+  updateIntaktPerVerk();
+
+  // Säkerställ rätt ikon för aktuellt bakgrundslager
+  if (map.hasLayer(mapboxSatellite)) {
+    updateTurbineIconsForBaselayer('Mapbox Satellite');
+  } else if (map.hasLayer(mapboxStreets)) {
+    updateTurbineIconsForBaselayer('Mapbox Streets');
+  } else {
+    updateTurbineIconsForBaselayer('OpenStreetMap');
   }
+}
 
   if (type === "residence") {
     if (residencesLayer) map.removeLayer(residencesLayer);
@@ -463,14 +519,18 @@ function processGeoJSON(rawGeoJSON, type) {
 
   layer.addTo(map);
 
-  if (turbinesLayer) {
-    map.fitBounds(turbinesLayer.getBounds(), {
-      padding: [30, 30],
-      maxZoom: 14
-    });
-  }
+if (turbinesLayer) {
+  map.fitBounds(turbinesLayer.getBounds(), {
+    padding: [30, 30],
+    maxZoom: 14
+  });
 
-  autoCalculate();
+  // Spara zoomnivån som husen ska vara synliga från och uppåt
+  residencesMinZoom = map.getZoom();
+}
+
+updateResidenceVisibility();
+autoCalculate();
 }
 
 // ==========================
@@ -913,6 +973,9 @@ document.addEventListener("click", function () {
   document.querySelectorAll(".info-tooltip-box").forEach(box => {
     box.style.display = "none";
   });
+});
+map.on("zoomend", function () {
+  updateResidenceVisibility();
 });
 
 updateIntaktPerVerk();
