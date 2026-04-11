@@ -397,7 +397,7 @@ body {
 .hover-legend {
   position: fixed;
   right: 20px;
-  bottom: 20px;
+  bottom: 40px;
   z-index: 800;
   width: 320px;
   background: rgba(255, 255, 255, 0.92);
