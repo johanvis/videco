@@ -37,7 +37,14 @@
         </div>
 
         <div class="mb-2">
-          <strong>Antal vindkraftverk:</strong><br>
+          <strong>
+            Antal vindkraftverk
+            <button
+              type="button"
+              class="info-icon-btn"
+              title="Totalt antal vindkraftverk i anläggningen. Används för att beräkna total schablonintäkt för anläggningen."
+            >?</button>
+          </strong><br>
           <span id="antalVerk" class="fw-bold">-</span>
         </div>
       </div>
@@ -53,34 +60,86 @@
 
         <div id="scenarioControls">
           <div class="mb-2">
-            <strong>Elområde:</strong><br>
+            <strong>
+              Elområde
+              <button
+                type="button"
+                class="info-icon-btn"
+                title="Elområde där anläggningen matar in el. Elområdet påverkar elpris och därmed beräknad schablonintäkt."
+              >?</button>
+            </strong><br>
             <span id="elomradeDisplay" class="text-muted">SE4</span>
           </div>
 
           <div class="menu-note mb-2">
-            Demo-versionen använder förinställda scenarier för SE4.
+            Demo-versionen använder förenklade scenarier för SE4 baserade på uppskattade framtida elprisnivåer.
           </div>
 
           <div class="scenario-inline-group mt-3">
-            <div class="scenario-inline-title">Scenariejämförelse (uppskattade elprisnivåer i mitten av 2030-talet)</div>
+            <div class="scenario-inline-title">
+              Scenariejämförelse
+              <button
+                type="button"
+                class="info-icon-btn"
+                title="Scenarierna visar förenklade antaganden om framtida årsmedelpris för el. De är avsedda för jämförelse, inte som prognoser."
+              >?</button>
+            </div>
             <div id="scenarioCards" class="d-grid gap-2"></div>
           </div>
         </div>
 
         <div id="manualControls" style="display: none;">
           <div class="mb-3">
-            <label class="form-label">Baspris (EUR/MWh):</label>
+            <label class="form-label" for="prisBas">
+              Baspris (EUR/MWh)
+              <button
+                type="button"
+                class="info-icon-btn"
+                title="Antaget årsmedelpris för el i aktuellt elområde. Används som en förenklad approximation av marknadsvärdet enligt lagförslaget."
+              >?</button>
+            </label>
             <input type="number" id="prisBas" step="0.1" value="44" class="form-control form-control-sm">
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Växelkurs (SEK/EUR):</label>
+            <label class="form-label" for="vaxelkurs">
+              Växelkurs (SEK/EUR)
+              <button
+                type="button"
+                class="info-icon-btn"
+                title="Används för att räkna om elpris från euro till svenska kronor."
+              >?</button>
+            </label>
             <input type="number" id="vaxelkurs" step="0.01" value="11.0" class="form-control form-control-sm">
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Basårsproduktion per verk (GWh):</label>
+            <label class="form-label" for="produktionBas">
+              Nettoårsproduktion per verk (GWh)
+              <button
+                type="button"
+                class="info-icon-btn"
+                title="Antagen årlig nettoelproduktion per verk. Bör spegla produktion efter normala förluster och driftantaganden."
+              >?</button>
+            </label>
             <input type="number" id="produktionBas" step="0.1" value="26.3" class="form-control form-control-sm">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="parkRevenueDisplay">
+              Total schablonintäkt (anläggning, SEK/år)
+              <button
+                type="button"
+                class="info-icon-btn"
+                title="Total uppskattad schablonintäkt för hela vindkraftsanläggningen, baserat på antagen produktion, elpris och antal verk."
+              >?</button>
+            </label>
+            <input
+              type="text"
+              id="parkRevenueDisplay"
+              class="form-control form-control-sm"
+              readonly
+            >
           </div>
         </div>
       </div>
@@ -90,7 +149,14 @@
       <summary>Totalhöjd</summary>
       <div class="menu-content">
         <div class="mb-1">
-          <label class="form-label">Verkens totalhöjd (m):</label>
+          <label class="form-label" for="totalhojd">
+            Verkens totalhöjd (m)
+            <button
+              type="button"
+              class="info-icon-btn"
+              title="Totalhöjden används för att beräkna promillezoner runt varje verk, till exempel 5H till 9H."
+            >?</button>
+          </label>
           <input type="number" id="totalhojd" step="1" value="210" class="form-control form-control-sm">
         </div>
       </div>
@@ -104,7 +170,7 @@
   <div id="resultsOverlay" class="results-overlay" style="display: none;">
     <div class="results-modal">
       <div class="results-modal-header">
-        <h3 id="resultsTitle">Resultat: Ersättning per bostad</h3>
+        <h3 id="resultsTitle">Resultat: Närboendeersättning per bostad</h3>
         <div class="results-header-actions">
           <div class="results-tabs">
             <button id="showResidenceResultsBtn" class="results-view-btn active">Per bostad</button>
@@ -118,6 +184,15 @@
 
       <div id="summaryBox" class="alert alert-secondary py-2 mb-3" style="display: none; font-size: 0.9rem;"></div>
 
+      <div id="calculationInfoBox" class="menu-info-box results-info-box" style="display: none;">
+        <div class="menu-info-title">Om beräkningen</div>
+        <div class="menu-info-text">
+          Analysen bygger på en förenklad schablonmodell enligt lagförslaget.
+          Elpris behandlas som ett årsmedelvärde och produktion anges som antagen nettoårsproduktion per verk.
+          Resultatet ska tolkas som ett scenario, inte som ett faktiskt utfall eller en prognos.
+        </div>
+      </div>
+
       <div id="residenceTableWrapper" class="table-responsive">
         <table id="resultTable" class="table table-bordered table-sm">
           <thead class="table-light">
@@ -130,9 +205,9 @@
                 </div>
               </th>
               <th>Vindkraftverk</th>
-              <th>Avstånd mellan bostad och vindkraftverk (m)</th>
-              <th>Inom promillezon</th>
-              <th>Ersättning för bostaden (SEK)</th>
+              <th>Avstånd mellan bostad och verk (m)</th>
+              <th>Promillezon</th>
+              <th>Närboendeersättning (SEK)</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -144,8 +219,8 @@
           <thead class="table-light">
             <tr>
               <th>Vindkraftverk</th>
-              <th>Total närboendeersättning per verk</th>
-              <th>Antal bostäder som verket har ersättningsskyldighet till</th>
+              <th>Total närboendeersättning per verk (SEK)</th>
+              <th>Antal berättigade bostäder</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -154,7 +229,6 @@
     </div>
   </div>
 
-  <!-- Hover-legend för verk -->
   <div id="hoverLegend" class="hover-legend" style="display: none;">
     <div class="hover-legend-title">Förklaring</div>
 

@@ -109,7 +109,6 @@ let turbineIcon = turbineIconDefault;
 // ==========================
 // Husikoner
 // ==========================
-
 const houseIcon = L.icon({
   iconUrl: 'icons/house.png',
   iconSize: [30, 30],
@@ -191,7 +190,6 @@ function getTurbineId(props) {
   if (id === undefined || id === null) return null;
   return id.toString().trim();
 }
-
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -278,11 +276,6 @@ function getCurrentResultLabel() {
 
 // ==========================
 // Hoverbeteende för verk
-// Visar zonringar runt verket och markerar bostäder:
-// - blå = utanför zon
-// - gul = inom promillezon men får inte ersättning från detta verk
-// - grön = får ersättning från detta verk
-// Visar även en legend medan användaren hovrar på verket
 // ==========================
 function addTurbineHoverBehavior(feature, layer) {
   layer.on('mouseover', function () {
@@ -699,7 +692,6 @@ function processGeoJSON(rawGeoJSON, type) {
 // ==========================
 // Intäktspreview
 // ==========================
-
 function getTurbineCount() {
   return turbinesLayer ? turbinesLayer.toGeoJSON().features.length : 0;
 }
@@ -882,13 +874,24 @@ function autoCalculate() {
 // ==========================
 function applyCurrentModeResult() {
   const result = getDisplayedResult();
-  if (!result) return;
+  const calculationInfoBox = document.getElementById('calculationInfoBox');
+
+  if (!result) {
+    if (calculationInfoBox) {
+      calculationInfoBox.style.display = 'none';
+    }
+    return;
+  }
 
   currentRows = [...result.rows];
   renderTable(currentRows);
   renderTurbineCostTable(currentRows);
   updateSummary(result);
   updateResultsTitle();
+
+  if (calculationInfoBox) {
+    calculationInfoBox.style.display = result.rows && result.rows.length > 0 ? 'block' : 'none';
+  }
 }
 
 // ==========================
@@ -903,8 +906,8 @@ function updateResultsTitle(view = 'residence') {
     : 'manuellt läge';
 
   resultsTitle.textContent = view === 'residence'
-    ? `Resultat: Ersättning per bostad – ${suffix}`
-    : `Resultat: Kostnad per verk – ${suffix}`;
+    ? `Resultat: Närboendeersättning per bostad – ${suffix}`
+    : `Resultat: Närboendeersättning per verk – ${suffix}`;
 }
 
 // ==========================
@@ -927,12 +930,7 @@ function setMode(mode) {
 }
 
 // ==========================
-// Renderar scenariokorten och markerar vilket scenario som är valt
-// När användaren klickar på ett scenario:
-// 1) scenariot aktiveras
-// 2) resultatet räknas/visas om
-// 3) resultatfönstret öppnas
-// 4) vyn sätts till "Per bostad"
+// Renderar scenariokorten
 // ==========================
 function renderScenarioCards() {
   const wrap = document.getElementById('scenarioCards');
@@ -961,7 +959,6 @@ function renderScenarioCards() {
       btn.addEventListener('click', () => {
         activeScenario = key;
 
-        // Säkerställ att vi är i scenario-läge
         if (currentMode !== 'scenario') {
           setMode('scenario');
         } else {
@@ -969,15 +966,12 @@ function renderScenarioCards() {
           updateRevenuePreview();
         }
 
-        // Rita om scenarioknapparna så att aktiv knapp markeras korrekt
         renderScenarioCards();
 
-        // Öppna resultatfönstret direkt
         if (resultsOverlayEl) {
           resultsOverlayEl.style.display = 'block';
         }
 
-        // Visa alltid tabellen "Per bostad" när scenario väljs
         const residenceTableWrapper = document.getElementById('residenceTableWrapper');
         const turbineTableWrapper = document.getElementById('turbineTableWrapper');
         const showResidenceResultsBtn = document.getElementById('showResidenceResultsBtn');
@@ -1027,12 +1021,12 @@ function updateSummary(result) {
 
   box.innerHTML = `
     <strong>${heading}:</strong><br>
-    Elpris: ${formatSEK(result.prisSek)} SEK/MWh (${prisPerKwhText} SEK/kWh)<br>
-    Årsintäkt för anläggningen: ${formatSEK(result.intaktAnlaggning)} SEK<br>
+    Schabloniserat elpris: ${formatSEK(result.prisSek)} SEK/MWh (${prisPerKwhText} SEK/kWh)<br>
+    Total schablonintäkt för anläggningen: ${formatSEK(result.intaktAnlaggning)} SEK<br>
     Totalt antal berättigade bostäder: ${result.antalBostader}<br>
-    Totalt ersättningsbelopp: ${formatSEK(result.totalErs)} SEK<br>
-    Genomsnittlig ersättning per berättigad bostad: ${formatSEK(genomsnitt)} SEK<br>
-    Genomsnittlig kostnad per verk: ${formatSEK(kostnadPerVerk)} SEK<br>
+    Total närboendeersättning: ${formatSEK(result.totalErs)} SEK<br>
+    Genomsnittlig närboendeersättning per berättigad bostad: ${formatSEK(genomsnitt)} SEK<br>
+    Genomsnittlig närboendeersättning per verk: ${formatSEK(kostnadPerVerk)} SEK<br>
     2 %-tak aktiverat: ${capStatus}
     <span id="capInfoToggle" style="cursor:pointer; margin-left:4px;">ⓘ</span>
     <div id="capInfoDetail" style="display:none; margin-top:4px;">
@@ -1122,6 +1116,11 @@ function renderTable(data) {
   if (resultsOverlayEl && data.length === 0) {
     resultsOverlayEl.style.display = 'none';
   }
+
+  const calculationInfoBox = document.getElementById('calculationInfoBox');
+  if (calculationInfoBox) {
+    calculationInfoBox.style.display = data.length > 0 ? 'block' : 'none';
+  }
 }
 
 // ==========================
@@ -1203,13 +1202,12 @@ async function loadDemoData() {
       summaryBox.className = 'alert alert-danger py-2 mb-3';
       summaryBox.innerHTML = `
         Demo-data kunde inte laddas.<br>
-        Kontrollera att följande filer finns i <code>/demo/data/</code>:<br>
+        Kontrollera att följande filer finns i mappen <code>data/</code>:<br>
         <code>turbines.geojson</code> och <code>houses.geojson</code>.
       `;
     }
   }
 }
-
 
 // ==========================
 // DOMContentLoaded
@@ -1260,8 +1258,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const currentLabel = currentMode === 'scenario' ? (scenarioMeta[activeScenario]?.label || 'Bas') : 'Manuell';
       const sheetName = showingResidenceTable ? `Per bostad ${currentLabel}` : `Per verk ${currentLabel}`;
       const fileName = showingResidenceTable
-        ? `kompensa_resultat_per_bostad_${scenarioOrMode}.xlsx`
-        : `kompensa_resultat_per_verk_${scenarioOrMode}.xlsx`;
+        ? `kompensa_narboendeersattning_per_bostad_${scenarioOrMode}.xlsx`
+        : `kompensa_narboendeersattning_per_verk_${scenarioOrMode}.xlsx`;
 
       const wb = XLSX.utils.table_to_book(table, { sheet: sheetName });
       XLSX.writeFile(wb, fileName);
@@ -1276,26 +1274,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const turbineTableWrapper = document.getElementById('turbineTableWrapper');
 
   function showResidenceTableView() {
-  if (residenceTableWrapper) residenceTableWrapper.style.display = 'block';
-  if (turbineTableWrapper) turbineTableWrapper.style.display = 'none';
+    if (residenceTableWrapper) residenceTableWrapper.style.display = 'block';
+    if (turbineTableWrapper) turbineTableWrapper.style.display = 'none';
 
-  // ✅ NYTT: aktiv/inaktiv knapp
-  if (showResidenceResultsBtn) showResidenceResultsBtn.classList.add('active');
-  if (showTurbineResultsBtn) showTurbineResultsBtn.classList.remove('active');
+    if (showResidenceResultsBtn) showResidenceResultsBtn.classList.add('active');
+    if (showTurbineResultsBtn) showTurbineResultsBtn.classList.remove('active');
 
-  updateResultsTitle('residence');
-}
+    updateResultsTitle('residence');
+  }
 
   function showTurbineTableView() {
-  if (residenceTableWrapper) residenceTableWrapper.style.display = 'none';
-  if (turbineTableWrapper) turbineTableWrapper.style.display = 'block';
+    if (residenceTableWrapper) residenceTableWrapper.style.display = 'none';
+    if (turbineTableWrapper) turbineTableWrapper.style.display = 'block';
 
-  // ✅ NYTT: aktiv/inaktiv knapp
-  if (showResidenceResultsBtn) showResidenceResultsBtn.classList.remove('active');
-  if (showTurbineResultsBtn) showTurbineResultsBtn.classList.add('active');
+    if (showResidenceResultsBtn) showResidenceResultsBtn.classList.remove('active');
+    if (showTurbineResultsBtn) showTurbineResultsBtn.classList.add('active');
 
-  updateResultsTitle('turbine');
-}
+    updateResultsTitle('turbine');
+  }
 
   if (showResidenceResultsBtn) {
     showResidenceResultsBtn.addEventListener('click', showResidenceTableView);
