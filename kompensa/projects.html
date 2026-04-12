@@ -5,10 +5,9 @@
   <title>Kompensa – Projekt</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Global styling för hela Videco -->
-  <link rel="stylesheet" href="../global.css">
+  <link rel="icon" type="image/png" sizes="32x32" href="/kompensa/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/kompensa/favicon-64.png">
 
-  <!-- App-specifik styling för Kompensa -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="kompensa-projects-page">
@@ -39,8 +38,6 @@
 
     <section id="projects-section" class="projects-section" style="display: none;">
       <div class="projects-grid" id="projects-grid">
-        
-        <!-- Nytt projekt-kort -->
         <button class="project-card create-card" id="create-project-card" type="button">
           <div class="create-card-icon">+</div>
           <div class="create-card-text">
@@ -48,65 +45,69 @@
             <p>Skapa ett nytt projekt och starta en analys.</p>
           </div>
         </button>
-
-        <!-- Befintliga projekt injiceras här -->
       </div>
     </section>
   </main>
 
   <script>
-    // ============================
-    // MOCK DATA
-    // Testa [] för att se empty state
-    // ============================
-    const projects = [
-      {
-        id: 1,
-        name: "Projekt Alpha",
-        updatedAt: "2026-03-20",
-        company: "Bolag X"
-      },
-      {
-        id: 2,
-        name: "Projekt Beta",
-        updatedAt: "2026-03-15",
-        company: "Bolag X"
-      }
-    ];
+    const API_BASE = "http://127.0.0.1:5000";
 
-    // ============================
-    // ELEMENT
-    // ============================
+    let projects = [];
+
     const emptyState = document.getElementById("empty-state");
     const projectsSection = document.getElementById("projects-section");
     const projectsGrid = document.getElementById("projects-grid");
     const createProjectBtn = document.getElementById("create-project-btn");
     const createProjectCard = document.getElementById("create-project-card");
 
-    // ============================
-    // INIT
-    // ============================
-    function initProjectsPage() {
-      if (projects.length === 0) {
+    async function fetchProjects() {
+      const response = await fetch(`${API_BASE}/projects`, {
+        credentials: "include"
+      });
+
+      if (response.status === 401) {
+        window.location.href = "/kompensa/login.html";
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error("Kunde inte hämta projekt från backend.");
+      }
+
+      return await response.json();
+    }
+
+    async function initProjectsPage() {
+      try {
+        const data = await fetchProjects();
+
+        if (!data) return;
+
+        projects = data;
+
+        if (projects.length === 0) {
+          emptyState.style.display = "flex";
+          projectsSection.style.display = "none";
+        } else {
+          emptyState.style.display = "none";
+          projectsSection.style.display = "block";
+          renderProjects();
+        }
+      } catch (error) {
+        console.error(error);
         emptyState.style.display = "flex";
-      } else {
-        projectsSection.style.display = "block";
-        renderProjects();
+        projectsSection.style.display = "none";
       }
     }
 
-    // ============================
-    // FORMAT DATE
-    // ============================
     function formatDate(dateString) {
       const date = new Date(dateString);
       return date.toLocaleDateString("sv-SE");
     }
 
-    // ============================
-    // RENDER PROJECTS
-    // ============================
     function renderProjects() {
+      document.querySelectorAll(".existing-project-card").forEach(card => card.remove());
+
       projects.forEach(project => {
         const projectCard = document.createElement("button");
         projectCard.type = "button";
@@ -125,31 +126,22 @@
         `;
 
         projectCard.addEventListener("click", () => {
-          alert("Öppnar projekt: " + project.name);
-          // Senare:
-          // window.location.href = "project.html?id=" + project.id;
+          window.location.href = "project.html?project=" + encodeURIComponent(project.id);
         });
 
         projectsGrid.appendChild(projectCard);
       });
     }
 
-    // ============================
-    // CREATE NEW PROJECT
-    // ============================
     function handleCreateProject() {
-      alert("Starta nytt projekt");
-      // Senare:
-      // window.location.href = "create-project.html";
+      window.location.href = "create_project.html";
     }
 
     createProjectBtn?.addEventListener("click", handleCreateProject);
     createProjectCard?.addEventListener("click", handleCreateProject);
 
-    // ============================
-    // START
-    // ============================
     initProjectsPage();
   </script>
 </body>
 </html>
+```

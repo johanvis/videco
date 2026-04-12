@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nytt projekt | Kompensa</title>
+  <meta
+    name="description"
+    content="Skapa ett nytt projekt i Kompensa genom att ange projektnamn och ladda upp turbinfil."
+  />
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/kompensa/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/kompensa/favicon-64.png">
+
+  <style>
+    :root {
+      --bg: #f5f6f4;
+      --card: #ffffff;
+      --text: #111111;
+      --muted: #5f635d;
+      --border: #d9ddd6;
+      --accent: #1f5f3b;
+      --accent-hover: #184c2f;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+      --radius: 18px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .eyebrow {
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #4c524a;
+      margin: 0 0 10px 0;
+    }
+
+    h1 {
+      font-size: clamp(2.5rem, 6vw, 4.4rem);
+      line-height: 0.98;
+      margin: 0 0 18px 0;
+      font-weight: 800;
+    }
+
+    .intro {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #333833;
+      max-width: 760px;
+      margin: 0 0 34px 0;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(280px, 360px);
+      gap: 28px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .form-card {
+      padding: 28px;
+    }
+
+    .side-card {
+      padding: 24px;
+    }
+
+    .section-title {
+      margin: 0 0 20px 0;
+      font-size: 1.4rem;
+      font-weight: 800;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.96rem;
+      font-weight: 700;
+    }
+
+    .hint {
+      margin-top: 8px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    input[type="text"],
+    input[type="file"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #fff;
+      color: var(--text);
+      padding: 14px 15px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="file"]:focus {
+      border-color: #9bb7a3;
+      box-shadow: 0 0 0 3px rgba(31, 95, 59, 0.08);
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+    }
+
+    .button {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 22px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.05s ease, background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .button:active {
+      transform: translateY(1px);
+    }
+
+    .button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .button-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .button-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .button-secondary {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .button-secondary:hover {
+      background: #f1f4f0;
+    }
+
+    .status {
+      margin-top: 18px;
+      min-height: 24px;
+      font-size: 0.96rem;
+      font-weight: 700;
+    }
+
+    .status.info {
+      color: #3d4e42;
+    }
+
+    .status.success {
+      color: #1f5f3b;
+    }
+
+    .status.error {
+      color: #b42318;
+    }
+
+    .side-card h2 {
+      margin: 0 0 14px 0;
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+
+    .side-card p {
+      margin: 0 0 14px 0;
+      line-height: 1.6;
+      color: #343934;
+      font-size: 0.96rem;
+    }
+
+    .side-card .small {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 860px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .page {
+        padding: 34px 18px 60px;
+      }
+
+      .form-card,
+      .side-card {
+        padding: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="eyebrow">Kompensa</p>
+    <h1>Nytt projekt</h1>
+    <p class="intro">
+      Ange projektnamn och ladda upp en GeoPackage-fil med turbiner. När du klickar på
+      <strong>Klart</strong> skapas projektmappen och analysen startar i den lokala testmiljön.
+    </p>
+
+    <div class="layout">
+      <section class="card form-card">
+        <h2 class="section-title">Projektuppgifter</h2>
+
+        <form id="createProjectForm">
+          <div class="field">
+            <label class="label" for="project_name">Projektnamn</label>
+            <input
+              type="text"
+              id="project_name"
+              name="project_name"
+              placeholder="Till exempel Fågelås"
+              required
+            />
+            <div class="hint">
+              Namnet används som projektnamn och mappnamn i den lokala testmiljön.
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label" for="turbines">Turbinfil</label>
+            <input
+              type="file"
+              id="turbines"
+              name="turbines"
+              accept=".gpkg"
+              required
+            />
+            <div class="hint">
+              Ladda upp en GeoPackage-fil med projektets turbiner.
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="submit" class="button button-primary" id="submitBtn">Klart</button>
+            <a href="projects.html" class="button button-secondary">Avbryt</a>
+          </div>
+
+          <div id="statusMessage" class="status info"></div>
+        </form>
+      </section>
+
+      <aside class="card side-card">
+        <h2>Vad som händer</h2>
+        <p>
+          Kompensa sparar turbinfilen i en ny projektmapp, kör analysen lokalt och skapar output
+          för projektet.
+        </p>
+        <p class="small">
+          Denna sida är kopplad till den lokala Flask-servern på
+          <strong>127.0.0.1:5000</strong>.
+        </p>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:5000";
+
+    const form = document.getElementById("createProjectForm");
+    const statusMessage = document.getElementById("statusMessage");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      statusMessage.className = "status info";
+      statusMessage.textContent = "Skapar projekt och kör analys...";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Arbetar...";
+
+      try {
+        const formData = new FormData(form);
+
+        const response = await fetch(`${API_BASE}/create_project`, {
+          method: "POST",
+          credentials: "include",
+          body: formData
+        });
+
+        if (response.status === 401) {
+          window.location.href = "/kompensa/login.html";
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Något gick fel.");
+        }
+
+        statusMessage.className = "status success";
+        statusMessage.textContent = `Projekt "${data.project}" skapades. Omdirigerar...`;
+
+        setTimeout(() => {
+          window.location.href = "projects.html";
+        }, 1000);
+
+      } catch (error) {
+        statusMessage.className = "status error";
+        statusMessage.textContent = `Fel: ${error.message}`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Klart";
+      }
+    });
+  </script>
+</body>
+</html>

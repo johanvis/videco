@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <title>Kompensa – Projektöversikt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/kompensa/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/kompensa/favicon-64.png">
+
+  <style>
+    :root {
+      --bg: #f5f6f4;
+      --card: #ffffff;
+      --text: #111111;
+      --muted: #5f635d;
+      --border: #d9ddd6;
+      --accent: #1f5f3b;
+      --accent-hover: #184c2f;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+      --radius: 18px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .eyebrow {
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #4c524a;
+      margin: 0 0 10px 0;
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 5vw, 4.2rem);
+      line-height: 1;
+      margin: 0 0 16px 0;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #333833;
+      margin: 0 0 32px 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .card h2 {
+      margin: 0 0 14px 0;
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+
+    .meta {
+      margin: 0 0 10px 0;
+      color: #333833;
+      line-height: 1.6;
+    }
+
+    .metric {
+      font-size: 2rem;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .metric-label {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+
+    .button {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 22px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .button-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .button-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .button-secondary {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .status {
+      margin-top: 20px;
+      font-weight: 700;
+    }
+
+    .status.error {
+      color: #b42318;
+    }
+
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .page {
+        padding: 34px 18px 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="eyebrow">Kompensa</p>
+    <h1 id="project-title">Projekt</h1>
+    <p class="subtitle" id="project-subtitle">Laddar projektinformation...</p>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Projektinformation</h2>
+        <p class="meta"><strong>Namn:</strong> <span id="project-name">–</span></p>
+        <p class="meta"><strong>Företag:</strong> <span id="project-company">–</span></p>
+        <p class="meta"><strong>Senast ändrad:</strong> <span id="project-updated">–</span></p>
+      </section>
+
+      <section class="card">
+        <h2>Analysöversikt</h2>
+        <p class="metric" id="turbine-count">–</p>
+        <p class="metric-label">Turbiner</p>
+        <br>
+        <p class="metric" id="house-count">–</p>
+        <p class="metric-label">Bostäder inom analysområdet</p>
+      </section>
+    </div>
+
+    <div class="actions">
+      <a href="projects.html" class="button button-secondary">Tillbaka till projekt</a>
+      <button class="button button-primary" id="open-map-btn" type="button">Öppna resultat</button>
+    </div>
+
+    <div id="status-message" class="status"></div>
+  </main>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:5000";
+
+    const projectTitle = document.getElementById("project-title");
+    const projectSubtitle = document.getElementById("project-subtitle");
+    const projectName = document.getElementById("project-name");
+    const projectCompany = document.getElementById("project-company");
+    const projectUpdated = document.getElementById("project-updated");
+    const turbineCount = document.getElementById("turbine-count");
+    const houseCount = document.getElementById("house-count");
+    const statusMessage = document.getElementById("status-message");
+    const openResultBtn = document.getElementById("open-map-btn");
+
+    function getProjectIdFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("project");
+    }
+
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("sv-SE");
+    }
+
+    async function fetchProject(projectId) {
+      const response = await fetch(`${API_BASE}/project/${encodeURIComponent(projectId)}`, {
+        credentials: "include"
+      });
+
+      if (response.status === 401) {
+        window.location.href = "/kompensa/login.html";
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error("Kunde inte hämta projektinformation.");
+      }
+
+      return await response.json();
+    }
+
+    async function initProjectPage() {
+      const projectId = getProjectIdFromUrl();
+
+      if (!projectId) {
+        statusMessage.className = "status error";
+        statusMessage.textContent = "Ingen projektparameter hittades i URL.";
+        return;
+      }
+
+      try {
+        const project = await fetchProject(projectId);
+
+        if (!project) {
+          return;
+        }
+
+        projectTitle.textContent = project.name;
+        projectSubtitle.textContent = "Här ser du en första översikt av projektets analysresultat.";
+        projectName.textContent = project.name;
+        projectCompany.textContent = project.company;
+        projectUpdated.textContent = formatDate(project.updatedAt);
+        turbineCount.textContent = project.summary.turbineCount;
+        houseCount.textContent = project.summary.houseCount;
+
+        openResultBtn.addEventListener("click", () => {
+          window.location.href = `project_map.html?project=${encodeURIComponent(projectId)}`;
+        });
+
+      } catch (error) {
+        console.error(error);
+        statusMessage.className = "status error";
+        statusMessage.textContent = error.message;
+      }
+    }
+
+    initProjectPage();
+  </script>
+</body>
+</html>

@@ -90,36 +90,39 @@ if (typeof proj4 !== 'undefined') {
 }
 
 // ==========================
-// Turbin- och husikoner
+// Turbinikoner
 // ==========================
 const turbineIconDefault = L.icon({
-  iconUrl: '/kompensa/icons/turbine.png',
+  iconUrl: 'icons/turbine.png',
   iconSize: [50, 50],
   iconAnchor: [25, 25]
 });
 
 const turbineIconWhite = L.icon({
-  iconUrl: '/kompensa/icons/white_turbine.png',
+  iconUrl: 'icons/white_turbine.png',
   iconSize: [50, 50],
   iconAnchor: [25, 25]
 });
 
 let turbineIcon = turbineIconDefault;
 
+// ==========================
+// Husikoner
+// ==========================
 const houseIcon = L.icon({
-  iconUrl: '/kompensa/icons/house.png',
+  iconUrl: 'icons/house.png',
   iconSize: [30, 30],
   iconAnchor: [15, 15]
 });
 
 const houseAffectedIcon = L.icon({
-  iconUrl: '/kompensa/icons/house_affected.png',
+  iconUrl: 'icons/house_affected.png',
   iconSize: [30, 30],
   iconAnchor: [15, 15]
 });
 
 const houseCompensatedIcon = L.icon({
-  iconUrl: '/kompensa/icons/compensated_house.png',
+  iconUrl: 'icons/compensated_house.png',
   iconSize: [35, 35],
   iconAnchor: [17, 17]
 });
@@ -198,7 +201,12 @@ function escapeHtml(value) {
 }
 
 // ==========================
-// Intern scenario- och demokonfiguration
+// API-konfiguration
+// ==========================
+const API_BASE = 'http://127.0.0.1:5000';
+
+// ==========================
+// Intern scenariokonfiguration
 // ==========================
 const DEMO_ELZONE = 'SE4';
 const DEFAULT_SCENARIO_PRODUCTION_GWH = 26.3;
@@ -206,7 +214,6 @@ const DEFAULT_MANUAL_PRICE_EUR = 44;
 const DEFAULT_EXCHANGE_RATE = 11.0;
 const DEFAULT_MANUAL_PRODUCTION_GWH = 26.3;
 
-// Priserna är satta som enkla produktscenarier för demon.
 // De är ankrade kring långsiktiga nivåer snarare än dagens marknad.
 const scenarioDefinitions = {
   low: { key: 'low', label: 'Låg', priceSekPerMWh: 840 },
@@ -676,10 +683,10 @@ function processGeoJSON(rawGeoJSON, type) {
   if (turbinesLayer) {
     map.fitBounds(turbinesLayer.getBounds(), {
       padding: [30, 30],
-      maxZoom: 14
+      maxZoom: 12
     });
 
-    residencesMinZoom = map.getZoom();
+    residencesMinZoom = map.getZoom() - 1;
   }
 
   updateResidenceVisibility();
@@ -1164,26 +1171,66 @@ function sortCurrentRowsByColumn(colIndex) {
 }
 
 // ==========================
-// Ladda demo-data direkt vid sidstart
+// Ladda projektdata direkt vid sidstart
 // ==========================
-async function loadDemoData() {
+async function loadProjectData() {
   try {
     updateRevenuePreview();
 
-    const [turbineResponse, residenceResponse] = await Promise.all([
-      fetch('data/turbines.geojson', { cache: 'no-store' }),
-      fetch('data/houses.geojson', { cache: 'no-store' })
+    const params = new URLSearchParams(window.location.search);
+    const projectName = params.get('project');
+
+    if (!projectName) {
+      throw new Error('Saknar project-parameter i URL.');
+    }
+
+    const safeProjectName = encodeURIComponent(projectName);
+
+    const projectNameEl = document.getElementById('projectName');
+    if (projectNameEl) {
+      projectNameEl.textContent = projectName;
+    }
+
+    const fetchOptions = {
+      cache: 'no-store',
+      credentials: 'include'
+    };
+
+    const [projectResponse, turbineResponse, residenceResponse] = await Promise.all([
+      fetch(`${API_BASE}/project/${safeProjectName}`, fetchOptions),
+      fetch(`${API_BASE}/project/${safeProjectName}/turbines`, fetchOptions),
+      fetch(`${API_BASE}/project/${safeProjectName}/houses`, fetchOptions)
     ]);
 
-    if (!turbineResponse.ok) {
-      throw new Error('Kunde inte läsa data/turbines.geojson');
-    }
-    if (!residenceResponse.ok) {
-      throw new Error('Kunde inte läsa data/houses.geojson');
+    if (
+      projectResponse.status === 401 ||
+      turbineResponse.status === 401 ||
+      residenceResponse.status === 401
+    ) {
+      window.location.href = '/kompensa/login.html';
+      return;
     }
 
+    if (!projectResponse.ok) {
+      throw new Error(`Kunde inte läsa projektmetadata för ${projectName}.`);
+    }
+    if (!turbineResponse.ok) {
+      throw new Error(`Kunde inte läsa turbiner för projektet ${projectName}.`);
+    }
+    if (!residenceResponse.ok) {
+      throw new Error(`Kunde inte läsa bostäder/resultat för projektet ${projectName}.`);
+    }
+
+    const projectMeta = await projectResponse.json();
     let turbinesGeoJSON = await turbineResponse.json();
     let residencesGeoJSON = await residenceResponse.json();
+
+    if (projectMeta?.summary?.turbineCount !== undefined) {
+      const antalVerkEl = document.getElementById('antalVerk');
+      if (antalVerkEl) {
+        antalVerkEl.textContent = projectMeta.summary.turbineCount;
+      }
+    }
 
     turbinesGeoJSON = maybeReprojectGeoJSON(turbinesGeoJSON, detectCrsFromGeoJSON(turbinesGeoJSON));
     residencesGeoJSON = maybeReprojectGeoJSON(residencesGeoJSON, detectCrsFromGeoJSON(residencesGeoJSON));
@@ -1198,9 +1245,8 @@ async function loadDemoData() {
       summaryBox.style.display = 'block';
       summaryBox.className = 'alert alert-danger py-2 mb-3';
       summaryBox.innerHTML = `
-        Demo-data kunde inte laddas.<br>
-        Kontrollera att följande filer finns i mappen <code>data/</code>:<br>
-        <code>turbines.geojson</code> och <code>houses.geojson</code>.
+        Projektdata kunde inte laddas.<br>
+        Kontrollera att Flask-servern körs och att projektet finns i <code>C:\\Videco\\test_projects</code>.
       `;
     }
   }
@@ -1354,5 +1400,5 @@ document.addEventListener('DOMContentLoaded', () => {
   setMode('scenario');
   renderScenarioCards();
   updateRevenuePreview();
-  loadDemoData();
+  loadProjectData();
 });

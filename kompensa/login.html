@@ -64,20 +64,41 @@
 
   </main>
 
-  <script>
-    function handleLogin(event) {
-      event.preventDefault();
+ <script>
+const API_BASE = "http://127.0.0.1:5000";
 
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+async function handleLogin(event) {
+  event.preventDefault();
 
-      if (email === "test@videco.se" && password === "1234") {
-        window.location.href = "/kompensa/projekt/";
-      } else {
-        document.getElementById("error").style.display = "block";
-      }
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const errorEl = document.getElementById("error");
+
+  errorEl.style.display = "none";
+
+  try {
+    const response = await fetch(`${API_BASE}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "include", 
+      body: JSON.stringify({ email, password })
+    });
+
+    if (response.ok) {
+      window.location.href = "/kompensa/projects.html";
+    } else {
+      errorEl.style.display = "block";
     }
-  </script>
+
+  } catch (err) {
+    console.error(err);
+    errorEl.textContent = "Kunde inte ansluta till servern";
+    errorEl.style.display = "block";
+  }
+}
+</script>
 
 </body>
 </html>
