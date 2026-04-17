@@ -132,7 +132,7 @@ function renderLayouts() {
         </p>
       </div>
       <div class="layout-actions">
-        <button class="button button-secondary open-layout-btn" type="button">Öppna</button>
+        <button class="button button-secondary open-layout-btn" type="button">Välj</button>
         ${layout.isBase ? "" : `<button class="button button-danger delete-layout-btn" type="button">Ta bort</button>`}
       </div>
     `;
