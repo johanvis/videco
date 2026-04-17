@@ -5,8 +5,6 @@ const projectSubtitle = document.getElementById("project-subtitle");
 const projectName = document.getElementById("project-name");
 const projectCompany = document.getElementById("project-company");
 const projectUpdated = document.getElementById("project-updated");
-const turbineCount = document.getElementById("turbine-count");
-const houseCount = document.getElementById("house-count");
 const statusMessage = document.getElementById("status-message");
 const openResultBtn = document.getElementById("open-map-btn");
 
@@ -35,6 +33,23 @@ function formatDate(dateString) {
 function setStatus(message, variant = "") {
   statusMessage.className = variant ? `status ${variant}` : "status";
   statusMessage.textContent = message || "";
+}
+
+async function safeReadJson(response) {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 async function fetchProject(projectId) {
@@ -72,40 +87,14 @@ async function fetchLayouts(projectId) {
   return await response.json();
 }
 
-async function safeReadJson(response) {
-  try {
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
-
 function updateProjectSummary(project) {
   currentProject = project;
 
   projectTitle.textContent = project.name;
-  projectSubtitle.textContent = "Här ser du en första översikt av projektets analysresultat och tillgängliga WTG-layouter.";
+  projectSubtitle.textContent = "Här ser du projektets layouter och väljer vilken layout som ska användas i resultatkartan.";
   projectName.textContent = project.name;
   projectCompany.textContent = project.company;
   projectUpdated.textContent = formatDate(project.updatedAt);
-}
-
-function updateSummaryForSelectedLayout() {
-  const selectedLayout = layouts.find(layout => layout.id === selectedLayoutId);
-
-  if (selectedLayout) {
-    turbineCount.textContent = selectedLayout.turbineCount ?? "–";
-  } else if (currentProject?.summary) {
-    turbineCount.textContent = currentProject.summary.turbineCount ?? "–";
-  } else {
-    turbineCount.textContent = "–";
-  }
-
-  if (currentProject?.summary) {
-    houseCount.textContent = currentProject.summary.houseCount ?? "–";
-  } else {
-    houseCount.textContent = "–";
-  }
 }
 
 function updateLayoutLimitInfo() {
@@ -120,7 +109,6 @@ function renderLayouts() {
   if (!layouts.length) {
     layoutEmpty.style.display = "block";
     updateLayoutLimitInfo();
-    updateSummaryForSelectedLayout();
     return;
   }
 
@@ -131,13 +119,15 @@ function renderLayouts() {
     item.className = `layout-item ${layout.id === selectedLayoutId ? "active" : ""}`;
 
     const title = layout.name || `Layout ${index + 1}`;
-    const turbineLabel = layout.turbineCount === 1 ? "turbin" : "turbiner";
+    const turbineText = layout.turbineCount ?? "–";
+    const houseText = currentProject?.summary?.houseCount ?? "–";
 
     item.innerHTML = `
       <div class="layout-main">
         <p class="layout-title">${escapeHtml(title)}</p>
         <p class="layout-meta">
-          ${layout.turbineCount ?? "–"} ${turbineLabel} ·
+          Turbiner: ${escapeHtml(turbineText)} ·
+          Bostäder: ${escapeHtml(houseText)} ·
           Skapad ${escapeHtml(formatDate(layout.createdAt))}${layout.isBase ? " · Ursprungslayout" : ""}
         </p>
       </div>
@@ -151,7 +141,6 @@ function renderLayouts() {
     openBtn.addEventListener("click", () => {
       selectedLayoutId = layout.id;
       renderLayouts();
-      updateSummaryForSelectedLayout();
       setStatus(`Vald layout: ${title}`, "success");
     });
 
@@ -166,16 +155,6 @@ function renderLayouts() {
   });
 
   updateLayoutLimitInfo();
-  updateSummaryForSelectedLayout();
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 async function uploadLayout(projectId, file) {
@@ -202,7 +181,7 @@ async function uploadLayout(projectId, file) {
   return payload;
 }
 
-async function deleteLayout(projectId, layoutId) {
+async function deleteLayoutRequest(projectId, layoutId) {
   const response = await fetch(`${API_BASE}/project/${encodeURIComponent(projectId)}/layouts/${encodeURIComponent(layoutId)}`, {
     method: "DELETE",
     credentials: "include"
@@ -267,7 +246,7 @@ async function handleDeleteLayout(projectId, layoutId, layoutName) {
   try {
     setStatus("Tar bort layout...", "muted");
 
-    const result = await deleteLayout(projectId, layoutId);
+    const result = await deleteLayoutRequest(projectId, layoutId);
     if (!result) return;
 
     setStatus(result.message || "Layout borttagen.", "success");

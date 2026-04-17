@@ -65,12 +65,6 @@
       margin: 0 0 32px 0;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 24px;
-    }
-
     .card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -89,18 +83,6 @@
       margin: 0 0 10px 0;
       color: #333833;
       line-height: 1.6;
-    }
-
-    .metric {
-      font-size: 2rem;
-      font-weight: 800;
-      margin: 0;
-    }
-
-    .metric-label {
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 0.95rem;
     }
 
     .actions {
@@ -250,10 +232,6 @@
     }
 
     @media (max-width: 860px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-
       .page {
         padding: 34px 18px 60px;
       }
@@ -276,23 +254,12 @@
     <h1 id="project-title">Projekt</h1>
     <p class="subtitle" id="project-subtitle">Laddar projektinformation...</p>
 
-    <div class="grid">
-      <section class="card">
-        <h2>Projektinformation</h2>
-        <p class="meta"><strong>Namn:</strong> <span id="project-name">–</span></p>
-        <p class="meta"><strong>Företag:</strong> <span id="project-company">–</span></p>
-        <p class="meta"><strong>Senast ändrad:</strong> <span id="project-updated">–</span></p>
-      </section>
-
-      <section class="card">
-        <h2>Analysöversikt</h2>
-        <p class="metric" id="turbine-count">–</p>
-        <p class="metric-label">Turbiner i vald layout</p>
-        <br>
-        <p class="metric" id="house-count">–</p>
-        <p class="metric-label">Bostäder inom analysområdet</p>
-      </section>
-    </div>
+    <section class="card">
+      <h2>Projektinformation</h2>
+      <p class="meta"><strong>Namn:</strong> <span id="project-name">–</span></p>
+      <p class="meta"><strong>Företag:</strong> <span id="project-company">–</span></p>
+      <p class="meta"><strong>Senast ändrad:</strong> <span id="project-updated">–</span></p>
+    </section>
 
     <section class="card layout-section">
       <h2>WTG-layouter</h2>

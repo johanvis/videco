@@ -200,6 +200,14 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function getProjectAndLayoutFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    project: params.get('project'),
+    layout: params.get('layout')
+  };
+}
+
 // ==========================
 // API-konfiguration
 // ==========================
@@ -1177,8 +1185,7 @@ async function loadProjectData() {
   try {
     updateRevenuePreview();
 
-    const params = new URLSearchParams(window.location.search);
-    const projectName = params.get('project');
+    const { project: projectName, layout: layoutId } = getProjectAndLayoutFromUrl();
 
     if (!projectName) {
       throw new Error('Saknar project-parameter i URL.');
@@ -1196,9 +1203,13 @@ async function loadProjectData() {
       credentials: 'include'
     };
 
+    const turbineUrl = layoutId
+      ? `${API_BASE}/project/${safeProjectName}/turbines?layout=${encodeURIComponent(layoutId)}`
+      : `${API_BASE}/project/${safeProjectName}/turbines`;
+
     const [projectResponse, turbineResponse, residenceResponse] = await Promise.all([
       fetch(`${API_BASE}/project/${safeProjectName}`, fetchOptions),
-      fetch(`${API_BASE}/project/${safeProjectName}/turbines`, fetchOptions),
+      fetch(turbineUrl, fetchOptions),
       fetch(`${API_BASE}/project/${safeProjectName}/houses`, fetchOptions)
     ]);
 
@@ -1215,7 +1226,8 @@ async function loadProjectData() {
       throw new Error(`Kunde inte läsa projektmetadata för ${projectName}.`);
     }
     if (!turbineResponse.ok) {
-      throw new Error(`Kunde inte läsa turbiner för projektet ${projectName}.`);
+      const errorPayload = await turbineResponse.json().catch(() => null);
+      throw new Error(errorPayload?.error || `Kunde inte läsa turbiner för projektet ${projectName}.`);
     }
     if (!residenceResponse.ok) {
       throw new Error(`Kunde inte läsa bostäder/resultat för projektet ${projectName}.`);
@@ -1246,7 +1258,7 @@ async function loadProjectData() {
       summaryBox.className = 'alert alert-danger py-2 mb-3';
       summaryBox.innerHTML = `
         Projektdata kunde inte laddas.<br>
-        Kontrollera att Flask-servern körs och att projektet finns i <code>C:\\Videco\\test_projects</code>.
+        Kontrollera att Flask-servern körs och att projektet finns tillgängligt.
       `;
     }
   }
