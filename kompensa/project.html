@@ -17,6 +17,8 @@
       --border: #d9ddd6;
       --accent: #1f5f3b;
       --accent-hover: #184c2f;
+      --danger: #b42318;
+      --danger-hover: #8f1c13;
       --shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
       --radius: 18px;
       --radius-sm: 12px;
@@ -137,13 +139,114 @@
       border: 1px solid var(--border);
     }
 
+    .button-danger {
+      background: #fff;
+      color: var(--danger);
+      border: 1px solid rgba(180, 35, 24, 0.25);
+      padding: 10px 16px;
+      font-size: 0.9rem;
+    }
+
+    .button-danger:hover {
+      background: #fff5f4;
+      color: var(--danger-hover);
+    }
+
+    .button[disabled] {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
     .status {
       margin-top: 20px;
       font-weight: 700;
     }
 
     .status.error {
-      color: #b42318;
+      color: var(--danger);
+    }
+
+    .status.success {
+      color: var(--accent);
+    }
+
+    .status.muted {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .layout-section {
+      margin-top: 32px;
+    }
+
+    .layout-toolbar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .layout-note {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin: 0 0 12px 0;
+    }
+
+    .hidden-input {
+      display: none;
+    }
+
+    .layout-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .layout-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .layout-item.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(31, 95, 59, 0.08);
+    }
+
+    .layout-main {
+      min-width: 0;
+    }
+
+    .layout-title {
+      margin: 0 0 6px 0;
+      font-weight: 800;
+      font-size: 1rem;
+    }
+
+    .layout-meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .layout-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .empty-state {
+      color: var(--muted);
+      font-size: 0.98rem;
+      padding: 16px 0 4px;
     }
 
     @media (max-width: 860px) {
@@ -153,6 +256,16 @@
 
       .page {
         padding: 34px 18px 60px;
+      }
+
+      .layout-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .layout-actions {
+        width: 100%;
+        justify-content: flex-start;
       }
     }
   </style>
@@ -174,12 +287,29 @@
       <section class="card">
         <h2>Analysöversikt</h2>
         <p class="metric" id="turbine-count">–</p>
-        <p class="metric-label">Turbiner</p>
+        <p class="metric-label">Turbiner i vald layout</p>
         <br>
         <p class="metric" id="house-count">–</p>
         <p class="metric-label">Bostäder inom analysområdet</p>
       </section>
     </div>
+
+    <section class="card layout-section">
+      <h2>WTG-layouter</h2>
+      <p class="layout-note">
+        Här kan du ladda upp alternativa WTG-layouter inom projektets tillåtna område.
+        Max 5 layouter per projekt.
+      </p>
+
+      <div class="layout-toolbar">
+        <button class="button button-primary" id="upload-layout-btn" type="button">Ladda upp ny WTG-layout</button>
+        <input class="hidden-input" id="layout-file-input" type="file" accept=".gpkg,.geojson,.json,.kml,.zip">
+        <span class="status muted" id="layout-limit-info">Laddar layouter...</span>
+      </div>
+
+      <div id="layout-list" class="layout-list"></div>
+      <div id="layout-empty" class="empty-state" style="display:none;">Inga layouter hittades för projektet.</div>
+    </section>
 
     <div class="actions">
       <a href="projects.html" class="button button-secondary">Tillbaka till projekt</a>
@@ -188,6 +318,7 @@
 
     <div id="status-message" class="status"></div>
   </main>
+
   <script src="/kompensa/config.js"></script>
   <script src="/kompensa/project.js"></script>
 </body>
