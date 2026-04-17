@@ -2,288 +2,94 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <title>Kompensa – Projektöversikt</title>
+  <title>Projektöversikt | Kompensa</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="icon" type="image/png" sizes="32x32" href="/kompensa/favicon-32.png">
   <link rel="icon" type="image/png" sizes="64x64" href="/kompensa/favicon-64.png">
 
-  <style>
-    :root {
-      --bg: #f5f6f4;
-      --card: #ffffff;
-      --text: #111111;
-      --muted: #5f635d;
-      --border: #d9ddd6;
-      --accent: #1f5f3b;
-      --accent-hover: #184c2f;
-      --danger: #b42318;
-      --danger-hover: #8f1c13;
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-      --radius: 18px;
-      --radius-sm: 12px;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    .page {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 48px 24px 80px;
-    }
-
-    .eyebrow {
-      font-size: 0.9rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #4c524a;
-      margin: 0 0 10px 0;
-    }
-
-    h1 {
-      font-size: clamp(2.4rem, 5vw, 4.2rem);
-      line-height: 1;
-      margin: 0 0 16px 0;
-      font-weight: 800;
-    }
-
-    .subtitle {
-      font-size: 1rem;
-      line-height: 1.6;
-      color: #333833;
-      margin: 0 0 32px 0;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 24px;
-    }
-
-    .card h2 {
-      margin: 0 0 14px 0;
-      font-size: 1.25rem;
-      font-weight: 800;
-    }
-
-    .meta {
-      margin: 0 0 10px 0;
-      color: #333833;
-      line-height: 1.6;
-    }
-
-    .actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 30px;
-    }
-
-    .button {
-      appearance: none;
-      border: none;
-      border-radius: 999px;
-      padding: 14px 22px;
-      font-size: 0.98rem;
-      font-weight: 700;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .button-primary {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .button-primary:hover {
-      background: var(--accent-hover);
-    }
-
-    .button-secondary {
-      background: #fff;
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    .button-danger {
-      background: #fff;
-      color: var(--danger);
-      border: 1px solid rgba(180, 35, 24, 0.25);
-      padding: 10px 16px;
-      font-size: 0.9rem;
-    }
-
-    .button-danger:hover {
-      background: #fff5f4;
-      color: var(--danger-hover);
-    }
-
-    .button[disabled] {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
-    .status {
-      margin-top: 20px;
-      font-weight: 700;
-    }
-
-    .status.error {
-      color: var(--danger);
-    }
-
-    .status.success {
-      color: var(--accent);
-    }
-
-    .status.muted {
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .layout-section {
-      margin-top: 32px;
-    }
-
-    .layout-toolbar {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .layout-note {
-      color: var(--muted);
-      font-size: 0.95rem;
-      line-height: 1.5;
-      margin: 0 0 12px 0;
-    }
-
-    .hidden-input {
-      display: none;
-    }
-
-    .layout-list {
-      display: grid;
-      gap: 14px;
-    }
-
-    .layout-item {
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 16px;
-      background: #fff;
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: center;
-    }
-
-    .layout-item.active {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(31, 95, 59, 0.08);
-    }
-
-    .layout-main {
-      min-width: 0;
-    }
-
-    .layout-title {
-      margin: 0 0 6px 0;
-      font-weight: 800;
-      font-size: 1rem;
-    }
-
-    .layout-meta {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.5;
-    }
-
-    .layout-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .empty-state {
-      color: var(--muted);
-      font-size: 0.98rem;
-      padding: 16px 0 4px;
-    }
-
-    @media (max-width: 860px) {
-      .page {
-        padding: 34px 18px 60px;
-      }
-
-      .layout-item {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .layout-actions {
-        width: 100%;
-        justify-content: flex-start;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="/kompensa/style.css">
 </head>
-<body>
-  <main class="page">
-    <p class="eyebrow">Kompensa</p>
-    <h1 id="project-title">Projekt</h1>
-    <p class="subtitle" id="project-subtitle">Laddar projektinformation...</p>
+<body class="kompensa-project-detail-page">
 
-    <section class="card">
-      <h2>Projektinformation</h2>
-      <p class="meta"><strong>Namn:</strong> <span id="project-name">–</span></p>
-      <p class="meta"><strong>Företag:</strong> <span id="project-company">–</span></p>
-      <p class="meta"><strong>Senast ändrad:</strong> <span id="project-updated">–</span></p>
+  <header class="projects-topbar">
+    <a href="/kompensa/projects.html" aria-label="Till projektöversikten">
+      <img src="/kompensa/logo.png" alt="Kompensa" class="projects-logo">
+    </a>
+  </header>
+
+  <main class="project-page">
+    <section class="project-header">
+      <div>
+        <h1 id="project-title">Projektöversikt</h1>
+        <p class="project-subtitle" id="project-subtitle">Laddar projektinformation...</p>
+      </div>
     </section>
 
-    <section class="card layout-section">
-      <h2>WTG-layouter</h2>
-      <p class="layout-note">
-        Här kan du ladda upp alternativa WTG-layouter inom projektets tillåtna område.
-        Max 5 layouter per projekt.
-      </p>
+    <section class="project-card">
+      <h2>Projektinformation</h2>
 
-      <div class="layout-toolbar">
-        <button class="button button-primary" id="upload-layout-btn" type="button">Ladda upp ny WTG-layout</button>
-        <input class="hidden-input" id="layout-file-input" type="file" accept=".gpkg,.geojson,.json,.kml,.zip">
-        <span class="status muted" id="layout-limit-info">Laddar layouter...</span>
+      <div class="project-meta-grid">
+        <div class="project-meta-item">
+          <span class="project-meta-label">Namn</span>
+          <span class="project-meta-value" id="project-name">–</span>
+        </div>
+
+        <div class="project-meta-item">
+          <span class="project-meta-label">Företag</span>
+          <span class="project-meta-value" id="project-company">–</span>
+        </div>
+
+        <div class="project-meta-item">
+          <span class="project-meta-label">Senast ändrad</span>
+          <span class="project-meta-value" id="project-updated">–</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="project-card project-layouts-section">
+      <div class="project-section-header">
+        <div>
+          <h2>Verkslayouter</h2>
+          <p class="project-section-note">
+            Här kan du ladda upp alternativa vindkraftsverkslayouter inom projektets tillåtna område.
+          </p>
+        </div>
+      </div>
+
+      <div class="project-toolbar">
+        <button class="btn btn-primary" id="upload-layout-btn" type="button">
+          Ladda upp ny layout
+        </button>
+
+        <input
+          class="hidden-input"
+          id="layout-file-input"
+          type="file"
+          accept=".gpkg,.geojson,.json,.kml,.zip"
+        >
+
+        <span class="project-toolbar-status" id="layout-limit-info">
+          Laddar layouter...
+        </span>
       </div>
 
       <div id="layout-list" class="layout-list"></div>
-      <div id="layout-empty" class="empty-state" style="display:none;">Inga layouter hittades för projektet.</div>
+
+      <div id="layout-empty" class="project-empty-state" style="display:none;">
+        Inga layouter hittades för projektet.
+      </div>
     </section>
 
-    <div class="actions">
-      <a href="projects.html" class="button button-secondary">Tillbaka till projekt</a>
-      <button class="button button-primary" id="open-map-btn" type="button">Öppna vald layout</button>
+    <div class="project-actions">
+      <a href="/kompensa/projects.html" class="btn btn-secondary">Tillbaka till projekt</a>
+
+      <button class="btn btn-primary" id="open-map-btn" type="button">
+        Öppna vald layout
+      </button>
     </div>
 
-    <div id="status-message" class="status"></div>
+    <div id="status-message" class="project-status"></div>
   </main>
 
   <script src="/kompensa/config.js"></script>

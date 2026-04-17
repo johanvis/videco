@@ -1,4 +1,5 @@
 const API_BASE = window.KOMPENSA_API_BASE;
+const MAX_LAYOUTS = 5;
 
 const projectTitle = document.getElementById("project-title");
 const projectSubtitle = document.getElementById("project-subtitle");
@@ -6,7 +7,7 @@ const projectName = document.getElementById("project-name");
 const projectCompany = document.getElementById("project-company");
 const projectUpdated = document.getElementById("project-updated");
 const statusMessage = document.getElementById("status-message");
-const openResultBtn = document.getElementById("open-map-btn");
+const openMapBtn = document.getElementById("open-map-btn");
 
 const uploadLayoutBtn = document.getElementById("upload-layout-btn");
 const layoutFileInput = document.getElementById("layout-file-input");
@@ -25,14 +26,35 @@ function getProjectIdFromUrl() {
 
 function formatDate(dateString) {
   if (!dateString) return "–";
+
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return dateString;
+
   return date.toLocaleDateString("sv-SE");
 }
 
-function setStatus(message, variant = "") {
-  statusMessage.className = variant ? `status ${variant}` : "status";
-  statusMessage.textContent = message || "";
+function setStatus(message = "", variant = "") {
+  statusMessage.className = variant ? `project-status ${variant}` : "project-status";
+  statusMessage.textContent = message;
+}
+
+function setLayoutInfo(message = "", variant = "") {
+  layoutLimitInfo.className = variant
+    ? `project-toolbar-status ${variant}`
+    : "project-toolbar-status";
+  layoutLimitInfo.textContent = message;
+}
+
+function updateLayoutLimitInfo(showLimitError = false) {
+  const count = layouts.length;
+
+  if (showLimitError && count >= MAX_LAYOUTS) {
+    setLayoutInfo(`Max ${MAX_LAYOUTS} layouter per projekt har uppnåtts.`, "error");
+  } else {
+    setLayoutInfo(`${count} av ${MAX_LAYOUTS} layouter`);
+  }
+
+  uploadLayoutBtn.disabled = count >= MAX_LAYOUTS;
 }
 
 async function safeReadJson(response) {
@@ -52,15 +74,26 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-async function fetchProject(projectId) {
-  const response = await fetch(`${API_BASE}/project/${encodeURIComponent(projectId)}`, {
-    credentials: "include"
+async function fetchWithAuth(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "include",
+    ...options
   });
 
   if (response.status === 401) {
     window.location.href = "/kompensa/login.html";
     return null;
   }
+
+  return response;
+}
+
+async function fetchProject(projectId) {
+  const response = await fetchWithAuth(
+    `${API_BASE}/project/${encodeURIComponent(projectId)}`
+  );
+
+  if (!response) return null;
 
   if (!response.ok) {
     throw new Error("Kunde inte hämta projektinformation.");
@@ -70,14 +103,11 @@ async function fetchProject(projectId) {
 }
 
 async function fetchLayouts(projectId) {
-  const response = await fetch(`${API_BASE}/project/${encodeURIComponent(projectId)}/layouts`, {
-    credentials: "include"
-  });
+  const response = await fetchWithAuth(
+    `${API_BASE}/project/${encodeURIComponent(projectId)}/layouts`
+  );
 
-  if (response.status === 401) {
-    window.location.href = "/kompensa/login.html";
-    return null;
-  }
+  if (!response) return null;
 
   if (!response.ok) {
     const payload = await safeReadJson(response);
@@ -90,17 +120,20 @@ async function fetchLayouts(projectId) {
 function updateProjectSummary(project) {
   currentProject = project;
 
-  projectTitle.textContent = project.name;
-  projectSubtitle.textContent = "Här ser du projektets layouter och väljer vilken layout som ska användas i resultatkartan.";
-  projectName.textContent = project.name;
-  projectCompany.textContent = project.company;
+  projectTitle.textContent = project.name || "Projektöversikt";
+  projectSubtitle.textContent =
+    "Här ser du projektets layouter och väljer vilken layout som ska användas i resultatkartan.";
+  projectName.textContent = project.name || "–";
+  projectCompany.textContent = project.company || "–";
   projectUpdated.textContent = formatDate(project.updatedAt);
 }
 
-function updateLayoutLimitInfo() {
-  const count = layouts.length;
-  layoutLimitInfo.textContent = `${count} av 5 layouter`;
-  uploadLayoutBtn.disabled = count >= 5;
+function ensureSelectedLayout() {
+  if (layouts.some((layout) => layout.id === selectedLayoutId)) {
+    return;
+  }
+
+  selectedLayoutId = layouts.length ? layouts[0].id : null;
 }
 
 function renderLayouts() {
@@ -108,7 +141,7 @@ function renderLayouts() {
 
   if (!layouts.length) {
     layoutEmpty.style.display = "block";
-    updateLayoutLimitInfo();
+    updateLayoutLimitInfo(false);
     return;
   }
 
@@ -132,8 +165,8 @@ function renderLayouts() {
         </p>
       </div>
       <div class="layout-actions">
-        <button class="button button-secondary open-layout-btn" type="button">Välj</button>
-        ${layout.isBase ? "" : `<button class="button button-danger delete-layout-btn" type="button">Ta bort</button>`}
+        <button class="btn btn-secondary open-layout-btn" type="button">Välj</button>
+        ${layout.isBase ? "" : '<button class="btn btn-danger delete-layout-btn" type="button">Ta bort</button>'}
       </div>
     `;
 
@@ -147,30 +180,29 @@ function renderLayouts() {
     const deleteBtn = item.querySelector(".delete-layout-btn");
     if (deleteBtn) {
       deleteBtn.addEventListener("click", async () => {
-        await deleteLayout(layout.id, title);
+        await handleDeleteLayout(layout.id, title);
       });
     }
 
     layoutList.appendChild(item);
   });
 
-  updateLayoutLimitInfo();
+  updateLayoutLimitInfo(false);
 }
 
 async function uploadLayout(projectId, file) {
   const formData = new FormData();
   formData.append("turbines", file);
 
-  const response = await fetch(`${API_BASE}/project/${encodeURIComponent(projectId)}/layouts`, {
-    method: "POST",
-    body: formData,
-    credentials: "include"
-  });
+  const response = await fetchWithAuth(
+    `${API_BASE}/project/${encodeURIComponent(projectId)}/layouts`,
+    {
+      method: "POST",
+      body: formData
+    }
+  );
 
-  if (response.status === 401) {
-    window.location.href = "/kompensa/login.html";
-    return null;
-  }
+  if (!response) return null;
 
   const payload = await safeReadJson(response);
 
@@ -182,15 +214,14 @@ async function uploadLayout(projectId, file) {
 }
 
 async function deleteLayoutRequest(projectId, layoutId) {
-  const response = await fetch(`${API_BASE}/project/${encodeURIComponent(projectId)}/layouts/${encodeURIComponent(layoutId)}`, {
-    method: "DELETE",
-    credentials: "include"
-  });
+  const response = await fetchWithAuth(
+    `${API_BASE}/project/${encodeURIComponent(projectId)}/layouts/${encodeURIComponent(layoutId)}`,
+    {
+      method: "DELETE"
+    }
+  );
 
-  if (response.status === 401) {
-    window.location.href = "/kompensa/login.html";
-    return null;
-  }
+  if (!response) return null;
 
   const payload = await safeReadJson(response);
 
@@ -201,11 +232,24 @@ async function deleteLayoutRequest(projectId, layoutId) {
   return payload;
 }
 
+async function refreshLayouts(projectId) {
+  const layoutPayload = await fetchLayouts(projectId);
+  if (!layoutPayload) return false;
+
+  layouts = Array.isArray(layoutPayload.layouts) ? layoutPayload.layouts : [];
+  selectedLayoutId = layoutPayload.activeLayoutId || selectedLayoutId;
+
+  ensureSelectedLayout();
+  renderLayouts();
+
+  return true;
+}
+
 async function handleLayoutUpload(projectId, file) {
   if (!file) return;
 
-  if (layouts.length >= 5) {
-    setStatus("Max 5 layouter per projekt har uppnåtts.", "error");
+  if (layouts.length >= MAX_LAYOUTS) {
+    updateLayoutLimitInfo(true);
     layoutFileInput.value = "";
     return;
   }
@@ -217,29 +261,28 @@ async function handleLayoutUpload(projectId, file) {
     const result = await uploadLayout(projectId, file);
     if (!result) return;
 
-    setStatus(result.message || "Layout uppladdad.", "success");
+    const refreshed = await refreshLayouts(projectId);
+    if (!refreshed) return;
 
-    const refreshedLayouts = await fetchLayouts(projectId);
-    if (!refreshedLayouts) return;
-
-    layouts = Array.isArray(refreshedLayouts.layouts) ? refreshedLayouts.layouts : [];
     if (result.layout?.id) {
       selectedLayoutId = result.layout.id;
-    } else if (!selectedLayoutId && layouts.length) {
-      selectedLayoutId = layouts[0].id;
+      renderLayouts();
     }
 
-    renderLayouts();
+    setStatus(result.message || "Layout uppladdad.", "success");
   } catch (error) {
     console.error(error);
-    setStatus(error.message, "error");
+    setStatus(error.message || "Kunde inte ladda upp layout.", "error");
   } finally {
     layoutFileInput.value = "";
-    updateLayoutLimitInfo();
+    updateLayoutLimitInfo(false);
   }
 }
 
-async function handleDeleteLayout(projectId, layoutId, layoutName) {
+async function handleDeleteLayout(layoutId, layoutName) {
+  const projectId = getProjectIdFromUrl();
+  if (!projectId) return;
+
   const confirmed = window.confirm(`Vill du ta bort ${layoutName}?`);
   if (!confirmed) return;
 
@@ -249,28 +292,48 @@ async function handleDeleteLayout(projectId, layoutId, layoutName) {
     const result = await deleteLayoutRequest(projectId, layoutId);
     if (!result) return;
 
+    const refreshed = await refreshLayouts(projectId);
+    if (!refreshed) return;
+
     setStatus(result.message || "Layout borttagen.", "success");
-
-    const refreshedLayouts = await fetchLayouts(projectId);
-    if (!refreshedLayouts) return;
-
-    layouts = Array.isArray(refreshedLayouts.layouts) ? refreshedLayouts.layouts : [];
-
-    if (!layouts.some(layout => layout.id === selectedLayoutId)) {
-      selectedLayoutId = layouts.length ? layouts[0].id : null;
-    }
-
-    renderLayouts();
   } catch (error) {
     console.error(error);
-    setStatus(error.message, "error");
+    setStatus(error.message || "Kunde inte ta bort layout.", "error");
+  } finally {
+    updateLayoutLimitInfo(false);
   }
 }
 
-async function deleteLayout(layoutId, layoutName) {
-  const projectId = getProjectIdFromUrl();
-  if (!projectId) return;
-  await handleDeleteLayout(projectId, layoutId, layoutName);
+function openSelectedLayout(projectId) {
+  const url = new URL("project_map.html", window.location.href);
+  url.searchParams.set("project", projectId);
+
+  if (selectedLayoutId) {
+    url.searchParams.set("layout", selectedLayoutId);
+  }
+
+  window.location.href = url.toString();
+}
+
+function bindEvents(projectId) {
+  openMapBtn.addEventListener("click", () => {
+    openSelectedLayout(projectId);
+  });
+
+  uploadLayoutBtn.addEventListener("click", () => {
+    if (layouts.length >= MAX_LAYOUTS) {
+      updateLayoutLimitInfo(true);
+      return;
+    }
+
+    updateLayoutLimitInfo(false);
+    layoutFileInput.click();
+  });
+
+  layoutFileInput.addEventListener("change", async () => {
+    const file = layoutFileInput.files?.[0];
+    await handleLayoutUpload(projectId, file);
+  });
 }
 
 async function initProjectPage() {
@@ -296,36 +359,13 @@ async function initProjectPage() {
     layouts = Array.isArray(layoutPayload.layouts) ? layoutPayload.layouts : [];
     selectedLayoutId = layoutPayload.activeLayoutId || (layouts[0]?.id ?? null);
 
+    ensureSelectedLayout();
     renderLayouts();
-
-    openResultBtn.addEventListener("click", () => {
-      const url = new URL("project_map.html", window.location.href);
-      url.searchParams.set("project", projectId);
-
-      if (selectedLayoutId) {
-        url.searchParams.set("layout", selectedLayoutId);
-      }
-
-      window.location.href = url.toString();
-    });
-
-    uploadLayoutBtn.addEventListener("click", () => {
-      if (layouts.length >= 5) {
-        setStatus("Max 5 layouter per projekt har uppnåtts.", "error");
-        return;
-      }
-      layoutFileInput.click();
-    });
-
-    layoutFileInput.addEventListener("change", async () => {
-      const file = layoutFileInput.files?.[0];
-      await handleLayoutUpload(projectId, file);
-    });
-
+    bindEvents(projectId);
     setStatus("");
   } catch (error) {
     console.error(error);
-    setStatus(error.message, "error");
+    setStatus(error.message || "Ett fel uppstod.", "error");
   }
 }
 

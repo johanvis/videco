@@ -2,77 +2,54 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kompensa – Projektkarta</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kompensa – Projektkarta | Videco</title>
   <meta
     name="description"
     content="Kompensa – projektkarta för analys och visualisering av närboendeersättning vid vindkraftsprojekt."
   />
-
   <link rel="icon" type="image/png" sizes="32x32" href="/kompensa/favicon-32.png">
   <link rel="icon" type="image/png" sizes="64x64" href="/kompensa/favicon-64.png">
-
-  <link rel="stylesheet" href="/kompensa/project_map.css">
+  <link rel="stylesheet" href="project_map.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.1/proj4.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
   <header class="topbar">
-    <div class="topbar-left">
-      <a href="/kompensa/projects.html" class="topbar-logo-link" aria-label="Till projektöversikten">
-        <img src="/kompensa/logo.png" alt="Kompensa" class="topbar-logo">
-      </a>
-
-      <div class="topbar-context">
-        <div class="topbar-project-label">Projektkarta</div>
-        <div class="topbar-project-name" id="topbarProjectName">Laddar projekt...</div>
-      </div>
-    </div>
-
-    <div class="topbar-right">
-      <a href="/kompensa/project.html" id="backToProjectBtn" class="topbar-link">
-        Projektöversikt
-      </a>
-    </div>
+    <h1 class="topbar-title">Kompensa</h1>
   </header>
 
   <div id="map"></div>
 
   <aside class="map-menu">
-    <div class="map-menu-header">
-      <div class="map-menu-title">Data och inställningar</div>
-      <div class="map-menu-subtitle">
-        Justera antaganden och öppna resultat i tabellform.
-      </div>
-    </div>
+    <div class="map-menu-title">Data och inställningar</div>
 
-    <details class="menu-group" open>
+    <details class="menu-group">
       <summary>Projektinformation</summary>
       <div class="menu-content">
-        <div class="menu-field">
-          <div class="menu-label">Projektnamn</div>
-          <div id="projectName" class="menu-value muted">-</div>
+        <div class="mb-2">
+          <strong>Projektnamn:</strong><br>
+          <span id="projectName" class="text-muted">-</span>
         </div>
 
-        <div class="menu-field">
-          <div class="menu-label with-info">
-            <span>Antal vindkraftverk</span>
+        <div class="mb-2">
+          <strong>
+            Antal vindkraftverk
             <button
               type="button"
               class="info-icon-btn"
               title="Totalt antal vindkraftverk i anläggningen. Används för att beräkna total schablonintäkt för anläggningen."
             >?</button>
-          </div>
-          <div id="antalVerk" class="menu-value strong">-</div>
+          </strong><br>
+          <span id="antalVerk" class="fw-bold">-</span>
         </div>
       </div>
     </details>
 
-    <details class="menu-group" open>
+    <details class="menu-group">
       <summary>Intäktsscenarier</summary>
       <div class="menu-content">
         <div class="mode-toggle" role="group" aria-label="Välj beräkningsläge">
@@ -81,21 +58,21 @@
         </div>
 
         <div id="scenarioControls">
-          <div class="menu-field">
-            <div class="menu-label with-info">
-              <span>Elområde</span>
+          <div class="mb-2">
+            <strong>
+              Elområde
               <button
                 type="button"
                 class="info-icon-btn"
                 title="Elområde där anläggningen matar in el. Elområdet påverkar elpris och därmed beräknad schablonintäkt."
               >?</button>
-            </div>
-            <div id="elomradeDisplay" class="menu-value muted">SE4</div>
+            </strong><br>
+            <span id="elomradeDisplay" class="text-muted">SE4</span>
           </div>
 
-          <div class="scenario-inline-group">
-            <div class="scenario-inline-title with-info">
-              <span>Scenariejämförelse</span>
+          <div class="scenario-inline-group mt-3">
+            <div class="scenario-inline-title">
+              Scenariejämförelse
               <button
                 type="button"
                 class="info-icon-btn"
@@ -180,23 +157,15 @@
       </div>
     </details>
 
-    <div class="map-menu-footer">
-      <button id="openResultsBtn" class="results-toggle-btn" style="display: none;">
-        Resultat i tabellform
-      </button>
-    </div>
+    <button id="openResultsBtn" class="results-toggle-btn" style="display: none;">
+      Resultat i tabellform
+    </button>
   </aside>
 
   <div id="resultsOverlay" class="results-overlay" style="display: none;">
     <div class="results-modal">
       <div class="results-modal-header">
-        <div class="results-modal-heading">
-          <h3 id="resultsTitle">Resultat: Närboendeersättning per bostad</h3>
-          <p class="results-modal-subtitle">
-            Jämför fördelning per bostad eller summering per verk.
-          </p>
-        </div>
-
+        <h3 id="resultsTitle">Resultat: Närboendeersättning per bostad</h3>
         <div class="results-header-actions">
           <div class="results-tabs">
             <button id="showResidenceResultsBtn" class="results-view-btn active">Per bostad</button>
@@ -208,7 +177,7 @@
         </div>
       </div>
 
-      <div id="summaryBox" class="summary-box" style="display: none;"></div>
+      <div id="summaryBox" class="alert alert-secondary py-2 mb-3" style="display: none; font-size: 0.9rem;"></div>
 
       <div id="calculationInfoBox" class="menu-info-box results-info-box" style="display: none;">
         <div class="menu-info-title">Om beräkningen</div>
@@ -220,7 +189,7 @@
       </div>
 
       <div id="residenceTableWrapper" class="table-responsive">
-        <table id="resultTable" class="table table-bordered table-sm kompensa-table">
+        <table id="resultTable" class="table table-bordered table-sm">
           <thead class="table-light">
             <tr>
               <th>
@@ -241,7 +210,7 @@
       </div>
 
       <div id="turbineTableWrapper" class="table-responsive" style="display: none;">
-        <table id="turbineResultTable" class="table table-bordered table-sm kompensa-table">
+        <table id="turbineResultTable" class="table table-bordered table-sm">
           <thead class="table-light">
             <tr>
               <th>Vindkraftverk</th>
@@ -259,47 +228,45 @@
     <div class="hover-legend-title">Förklaring</div>
 
     <div class="hover-legend-item">
-      <img src="/kompensa/icons/house.png" alt="Vanligt hus">
+      <img src="icons/house.png" alt="Vanligt hus">
       <span>Utanför aktuellt verks promillezoner</span>
     </div>
 
     <div class="hover-legend-item">
-      <img src="/kompensa/icons/house_affected.png" alt="Hus inom zon">
+      <img src="icons/house_affected.png" alt="Hus inom zon">
       <span>Inom promillezon, men får ingen ersättning från detta verk</span>
     </div>
 
     <div class="hover-legend-item">
-      <img src="/kompensa/icons/compensated_house.png" alt="Hus med ersättning">
+      <img src="icons/compensated_house.png" alt="Hus med ersättning">
       <span>Får ersättning från detta verk</span>
     </div>
-
-    <div class="hover-legend-divider"></div>
 
     <div class="hover-legend-title">Promillezoner</div>
     <div class="hover-legend-subtitle">Avstånd från verk (H = totalhöjd)</div>
 
     <div class="hover-legend-item">
-      <span class="zone-dot zone-dot-1"></span>
+      <span style="display:inline-block;width:14px;height:14px;background:#007bff;border-radius:50%;opacity:0.35;margin-right:6px;"></span>
       <span>≤ 5H – 2,5 ‰</span>
     </div>
 
     <div class="hover-legend-item">
-      <span class="zone-dot zone-dot-2"></span>
+      <span style="display:inline-block;width:14px;height:14px;background:#007bff;border-radius:50%;opacity:0.25;margin-right:6px;"></span>
       <span>5–6H – 2,0 ‰</span>
     </div>
 
     <div class="hover-legend-item">
-      <span class="zone-dot zone-dot-3"></span>
+      <span style="display:inline-block;width:14px;height:14px;background:#007bff;border-radius:50%;opacity:0.18;margin-right:6px;"></span>
       <span>6–7H – 1,5 ‰</span>
     </div>
 
     <div class="hover-legend-item">
-      <span class="zone-dot zone-dot-4"></span>
+      <span style="display:inline-block;width:14px;height:14px;background:#007bff;border-radius:50%;opacity:0.12;margin-right:6px;"></span>
       <span>7–8H – 1,0 ‰</span>
     </div>
 
     <div class="hover-legend-item">
-      <span class="zone-dot zone-dot-5"></span>
+      <span style="display:inline-block;width:14px;height:14px;background:#007bff;border-radius:50%;opacity:0.06;margin-right:6px;"></span>
       <span>8–9H – 0,5 ‰</span>
     </div>
   </div>
@@ -307,6 +274,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
   <script src="/kompensa/config.js"></script>
-  <script src="/kompensa/project_map.js"></script>
+  <script src="project_map.js"></script>
 </body>
 </html>

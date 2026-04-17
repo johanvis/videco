@@ -13,13 +13,8 @@
 
   <main class="card form-card">
 
-    <div class="brand">Videco</div>
-
-    <h1 class="form-title">Kompensa</h1>
-
-    <p class="subtitle">
-      Logga in för att öppna företagets projekt
-    </p>
+    <img src="/kompensa/logo.png" alt="Kompensa" class="hero-logo form-logo">
+    <h1 class="sr-only">Logga in till Kompensa</h1>
 
     <form onsubmit="handleLogin(event)">
 
@@ -39,8 +34,8 @@
         </button>
       </div>
 
-      <div id="error" style="display:none; margin-top:12px; color:#b91c1c; font-weight:600;">
-        Fel e-post eller lösenord
+      <div id="error" class="form-error">
+      Fel e-post eller lösenord
       </div>
 
     </form>
