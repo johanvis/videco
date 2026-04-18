@@ -1,4 +1,4 @@
-// ==========================
+﻿// ==========================
 // Initiera kartan
 // ==========================
 let map = L.map('map').setView([62.0, 15.0], 5);
@@ -212,45 +212,24 @@ function getProjectAndLayoutFromUrl() {
 // API-konfiguration
 // ==========================
 const API_BASE = window.KOMPENSA_API_BASE;
+const SCENARIO_CONFIG = window.KOMPENSA_CONFIG?.SCENARIOS_2035 || {};
 
 // ==========================
 // Intern scenariokonfiguration
 // ==========================
-let currentElomrade = 'SE4';
+let currentElomrade = 'SE3';
 
 const DEFAULT_SCENARIO_PRODUCTION_GWH = 26.3;
 const DEFAULT_MANUAL_PRICE_EUR = 44;
 const DEFAULT_EXCHANGE_RATE = 11.0;
 const DEFAULT_MANUAL_PRODUCTION_GWH = 26.3;
 
-// Scenarioantaganden per elområde.
-// Justera nivåerna här när du vill kalibrera produktens standardscenarier.
-const scenarioDefinitionsByElomrade = {
-  SE1: {
-    low: { key: 'low', label: 'Låg', priceSekPerMWh: 520 },
-    base: { key: 'base', label: 'Bas', priceSekPerMWh: 615 },
-    high: { key: 'high', label: 'Hög', priceSekPerMWh: 710 }
-  },
-  SE2: {
-    low: { key: 'low', label: 'Låg', priceSekPerMWh: 600 },
-    base: { key: 'base', label: 'Bas', priceSekPerMWh: 695 },
-    high: { key: 'high', label: 'Hög', priceSekPerMWh: 790 }
-  },
-  SE3: {
-    low: { key: 'low', label: 'Låg', priceSekPerMWh: 720 },
-    base: { key: 'base', label: 'Bas', priceSekPerMWh: 825 },
-    high: { key: 'high', label: 'Hög', priceSekPerMWh: 930 }
-  },
-  SE4: {
-    low: { key: 'low', label: 'Låg', priceSekPerMWh: 840 },
-    base: { key: 'base', label: 'Bas', priceSekPerMWh: 935 },
-    high: { key: 'high', label: 'Hög', priceSekPerMWh: 1030 }
-  }
-};
-
 function setElomradeDisplay(elomrade) {
-  const safeElomrade = typeof elomrade === 'string' && elomrade.trim() ? elomrade.trim().toUpperCase() : 'SE4';
-  currentElomrade = scenarioDefinitionsByElomrade[safeElomrade] ? safeElomrade : 'SE4';
+  const safeElomrade =
+    typeof elomrade === 'string' && elomrade.trim()
+      ? elomrade.trim().toUpperCase()
+      : 'SE3';
+  currentElomrade = SCENARIO_CONFIG[safeElomrade] ? safeElomrade : 'SE3';
 
   const el = document.getElementById('elomradeDisplay');
   if (el) {
@@ -259,17 +238,22 @@ function setElomradeDisplay(elomrade) {
 }
 
 function getScenarioDefinitionsForCurrentElomrade() {
-  return scenarioDefinitionsByElomrade[currentElomrade] || scenarioDefinitionsByElomrade.SE4;
+  return SCENARIO_CONFIG[currentElomrade] || SCENARIO_CONFIG.SE3;
 }
 
 function getScenarioDefinition(key) {
   const defs = getScenarioDefinitionsForCurrentElomrade();
-  return defs[key] || defs.base;
+
+  return {
+    key,
+    label: scenarioMeta[key]?.label || key,
+    priceSekPerMWh: defs[key]
+  };
 }
 
 function getDefaultManualPriceEurForElomrade(elomrade = currentElomrade) {
-  const defs = scenarioDefinitionsByElomrade[elomrade] || scenarioDefinitionsByElomrade.SE4;
-  const baseSekPerMWh = defs.base.priceSekPerMWh;
+  const defs = SCENARIO_CONFIG[elomrade] || SCENARIO_CONFIG.SE3;
+  const baseSekPerMWh = defs.base;
   return Number((baseSekPerMWh / DEFAULT_EXCHANGE_RATE).toFixed(1));
 }
 
@@ -302,22 +286,22 @@ function getScenarioConfig() {
   return {
     low: {
       key: 'low',
-      label: defs.low.label,
-      prisSek: defs.low.priceSekPerMWh,
+      label: 'Låg',
+      prisSek: defs.low,
       produktion: DEFAULT_SCENARIO_PRODUCTION_GWH,
       mode: 'scenario'
     },
     base: {
       key: 'base',
-      label: defs.base.label,
-      prisSek: defs.base.priceSekPerMWh,
+      label: 'Bas',
+      prisSek: defs.base,
       produktion: DEFAULT_SCENARIO_PRODUCTION_GWH,
       mode: 'scenario'
     },
     high: {
       key: 'high',
-      label: defs.high.label,
-      prisSek: defs.high.priceSekPerMWh,
+      label: 'Hög',
+      prisSek: defs.high,
       produktion: DEFAULT_SCENARIO_PRODUCTION_GWH,
       mode: 'scenario'
     }
@@ -1299,7 +1283,7 @@ async function loadProjectData() {
       }
     }
 
-    const detectedElomrade = projectMeta?.elomrade || projectMeta?.projectMeta?.elomrade || 'SE4';
+    const detectedElomrade = projectMeta?.elomrade || projectMeta?.projectMeta?.elomrade || 'SE3';
     setElomradeDisplay(detectedElomrade);
     syncManualDefaultsToElomrade();
 
@@ -1487,3 +1471,4 @@ document.addEventListener('DOMContentLoaded', () => {
   updateRevenuePreview();
   loadProjectData();
 });
+
