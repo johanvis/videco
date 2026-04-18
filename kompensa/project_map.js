@@ -216,18 +216,71 @@ const API_BASE = window.KOMPENSA_API_BASE;
 // ==========================
 // Intern scenariokonfiguration
 // ==========================
-const DEMO_ELZONE = 'SE4';
+let currentElomrade = 'SE4';
+
 const DEFAULT_SCENARIO_PRODUCTION_GWH = 26.3;
 const DEFAULT_MANUAL_PRICE_EUR = 44;
 const DEFAULT_EXCHANGE_RATE = 11.0;
 const DEFAULT_MANUAL_PRODUCTION_GWH = 26.3;
 
-// De är ankrade kring långsiktiga nivåer snarare än dagens marknad.
-const scenarioDefinitions = {
-  low: { key: 'low', label: 'Låg', priceSekPerMWh: 840 },
-  base: { key: 'base', label: 'Bas', priceSekPerMWh: 935 },
-  high: { key: 'high', label: 'Hög', priceSekPerMWh: 1030 }
+// Scenarioantaganden per elområde.
+// Justera nivåerna här när du vill kalibrera produktens standardscenarier.
+const scenarioDefinitionsByElomrade = {
+  SE1: {
+    low: { key: 'low', label: 'Låg', priceSekPerMWh: 520 },
+    base: { key: 'base', label: 'Bas', priceSekPerMWh: 615 },
+    high: { key: 'high', label: 'Hög', priceSekPerMWh: 710 }
+  },
+  SE2: {
+    low: { key: 'low', label: 'Låg', priceSekPerMWh: 600 },
+    base: { key: 'base', label: 'Bas', priceSekPerMWh: 695 },
+    high: { key: 'high', label: 'Hög', priceSekPerMWh: 790 }
+  },
+  SE3: {
+    low: { key: 'low', label: 'Låg', priceSekPerMWh: 720 },
+    base: { key: 'base', label: 'Bas', priceSekPerMWh: 825 },
+    high: { key: 'high', label: 'Hög', priceSekPerMWh: 930 }
+  },
+  SE4: {
+    low: { key: 'low', label: 'Låg', priceSekPerMWh: 840 },
+    base: { key: 'base', label: 'Bas', priceSekPerMWh: 935 },
+    high: { key: 'high', label: 'Hög', priceSekPerMWh: 1030 }
+  }
 };
+
+function setElomradeDisplay(elomrade) {
+  const safeElomrade = typeof elomrade === 'string' && elomrade.trim() ? elomrade.trim().toUpperCase() : 'SE4';
+  currentElomrade = scenarioDefinitionsByElomrade[safeElomrade] ? safeElomrade : 'SE4';
+
+  const el = document.getElementById('elomradeDisplay');
+  if (el) {
+    el.textContent = currentElomrade;
+  }
+}
+
+function getScenarioDefinitionsForCurrentElomrade() {
+  return scenarioDefinitionsByElomrade[currentElomrade] || scenarioDefinitionsByElomrade.SE4;
+}
+
+function getScenarioDefinition(key) {
+  const defs = getScenarioDefinitionsForCurrentElomrade();
+  return defs[key] || defs.base;
+}
+
+function getDefaultManualPriceEurForElomrade(elomrade = currentElomrade) {
+  const defs = scenarioDefinitionsByElomrade[elomrade] || scenarioDefinitionsByElomrade.SE4;
+  const baseSekPerMWh = defs.base.priceSekPerMWh;
+  return Number((baseSekPerMWh / DEFAULT_EXCHANGE_RATE).toFixed(1));
+}
+
+function syncManualDefaultsToElomrade() {
+  const prisBasEl = document.getElementById('prisBas');
+  if (!prisBasEl) return;
+
+  if (!prisBasEl.dataset.userModified) {
+    prisBasEl.value = getDefaultManualPriceEurForElomrade(currentElomrade);
+  }
+}
 
 function getManualInputs() {
   const prisBas = parseFloat(document.getElementById('prisBas')?.value ?? DEFAULT_MANUAL_PRICE_EUR);
@@ -244,25 +297,27 @@ function getManualInputs() {
 }
 
 function getScenarioConfig() {
+  const defs = getScenarioDefinitionsForCurrentElomrade();
+
   return {
     low: {
       key: 'low',
-      label: scenarioDefinitions.low.label,
-      prisSek: scenarioDefinitions.low.priceSekPerMWh,
+      label: defs.low.label,
+      prisSek: defs.low.priceSekPerMWh,
       produktion: DEFAULT_SCENARIO_PRODUCTION_GWH,
       mode: 'scenario'
     },
     base: {
       key: 'base',
-      label: scenarioDefinitions.base.label,
-      prisSek: scenarioDefinitions.base.priceSekPerMWh,
+      label: defs.base.label,
+      prisSek: defs.base.priceSekPerMWh,
       produktion: DEFAULT_SCENARIO_PRODUCTION_GWH,
       mode: 'scenario'
     },
     high: {
       key: 'high',
-      label: scenarioDefinitions.high.label,
-      prisSek: scenarioDefinitions.high.priceSekPerMWh,
+      label: defs.high.label,
+      prisSek: defs.high.priceSekPerMWh,
       produktion: DEFAULT_SCENARIO_PRODUCTION_GWH,
       mode: 'scenario'
     }
@@ -718,7 +773,7 @@ function updateRevenuePreview() {
   const turbineCount = getTurbineCount();
 
   if (currentMode === 'scenario') {
-    const activeDef = scenarioDefinitions[activeScenario] || scenarioDefinitions.base;
+    const activeDef = getScenarioDefinition(activeScenario);
     const totalRevenue = activeDef.priceSekPerMWh * DEFAULT_SCENARIO_PRODUCTION_GWH * 1000 * turbineCount;
     revenueEl.value = formatSEK(totalRevenue);
     return;
@@ -1244,6 +1299,15 @@ async function loadProjectData() {
       }
     }
 
+    const detectedElomrade = projectMeta?.elomrade || projectMeta?.projectMeta?.elomrade || 'SE4';
+    setElomradeDisplay(detectedElomrade);
+    syncManualDefaultsToElomrade();
+
+    const topbarProjectNameEl = document.getElementById('topbarProjectName');
+    if (topbarProjectNameEl) {
+      topbarProjectNameEl.textContent = projectMeta?.name || projectName;
+    }
+
     turbinesGeoJSON = maybeReprojectGeoJSON(turbinesGeoJSON, detectCrsFromGeoJSON(turbinesGeoJSON));
     residencesGeoJSON = maybeReprojectGeoJSON(residencesGeoJSON, detectCrsFromGeoJSON(residencesGeoJSON));
 
@@ -1274,6 +1338,15 @@ document.addEventListener('DOMContentLoaded', () => {
   watchedIds.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
+
+    if (id === 'prisBas') {
+      el.addEventListener('input', () => {
+        el.dataset.userModified = 'true';
+      });
+      el.addEventListener('change', () => {
+        el.dataset.userModified = 'true';
+      });
+    }
 
     el.addEventListener('input', () => {
       updateRevenuePreview();
