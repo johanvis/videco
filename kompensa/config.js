@@ -4,24 +4,24 @@ window.KOMPENSA_CONFIG = {
   // 2035-antaganden (SEK/MWh)
   SCENARIOS_2035: {
     SE1: {
-      low: 750,
-      base: 870,
-      high: 950
+      low: 600,
+      base: 750,
+      high: 900
     },
     SE2: {
-      low: 750,
-      base: 870,
-      high: 950
+      low: 600,
+      base: 750,
+      high: 900
     },
     SE3: {
-      low: 800,
-      base: 870,
-      high: 950
+      low: 700,
+      base: 850,
+      high: 1000
     },
     SE4: {
-      low: 500,
-      base: 560,
-      high: 650
+      low: 750,
+      base: 900,
+      high: 1100
     }
   }
 };
