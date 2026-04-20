@@ -1,4 +1,4 @@
-// ==========================
+﻿// ==========================
 // Initiera kartan
 // ==========================
 let map = L.map('map').setView([62.0, 15.0], 5);
@@ -124,6 +124,8 @@ const houseCompensatedIcon = L.icon({
   iconAnchor: [17, 17]
 });
 
+const HOUSE_ICON_ZOOM_THRESHOLD = 15;
+
 // ==========================
 // Funktion för att byta ikon beroende på bakgrundskarta
 // ==========================
@@ -160,6 +162,170 @@ function updateResidenceVisibility() {
 // ==========================
 // Hjälpfunktioner
 // ==========================
+function createResidenceMarker(latlng, feature) {
+  const zoom = map.getZoom();
+
+  if (zoom >= HOUSE_ICON_ZOOM_THRESHOLD) {
+    return L.marker(latlng, {
+      icon: houseIcon
+    });
+  }
+
+  return L.circleMarker(latlng, {
+    radius: 3,
+    fillColor: '#2c7fb8',
+    color: '#ffffff',
+    weight: 1,
+    fillOpacity: 0.6
+  });
+}
+
+function setResidenceHoverState(layer, icon) {
+  if (layer instanceof L.Marker) {
+    layer.setIcon(icon);
+    return;
+  }
+
+  const isCompensated = icon === houseCompensatedIcon;
+  layer.setStyle({
+    radius: isCompensated ? 5 : 4,
+    fillColor: isCompensated ? '#5ca65c' : '#f28e2b',
+    color: '#ffffff',
+    weight: 1,
+    fillOpacity: 0.9
+  });
+}
+
+function resetResidenceHoverState(layer, previousState) {
+  if (layer instanceof L.Marker) {
+    layer.setIcon(previousState);
+    return;
+  }
+
+  layer.setStyle(previousState);
+}
+
+function addResidenceInteractions(feature, layer) {
+  layer.on('mouseover', function () {
+    if (!turbinesLayer) return;
+
+    const H = parseFloat(document.getElementById('totalhojd').value);
+    const maxDist = (!isNaN(H) && H > 0) ? 9 * H : Infinity;
+
+    const resPoint = turf.point(feature.geometry.coordinates);
+    const turbines = turbinesLayer.toGeoJSON().features;
+
+    const dists = turbines.map(t => {
+      const tPoint = turf.point(t.geometry.coordinates);
+      const dist = turf.distance(resPoint, tPoint, { units: 'kilometers' }) * 1000;
+      return { feature: t, dist };
+    });
+
+    const relevant = dists
+      .filter(d => d.dist <= maxDist)
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, 2);
+
+    if (relevant.length === 0) return;
+
+    relevant.forEach(n => {
+      const line = L.polyline([
+        [feature.geometry.coordinates[1], feature.geometry.coordinates[0]],
+        [n.feature.geometry.coordinates[1], n.feature.geometry.coordinates[0]]
+      ], {
+        color: 'orange',
+        dashArray: '4',
+        weight: 2
+      }).addTo(map);
+
+      layer._lines = layer._lines || [];
+      layer._lines.push(line);
+    });
+
+    const objektId = getResidenceId(feature.properties) || 'Okänt ID';
+    const displayedResult = getDisplayedResult();
+    const compensationRows = displayedResult?.rows?.filter(row => row.objektiden === objektId) || [];
+    const popupLines = relevant.map(n => {
+      const turbineId = getTurbineId(n.feature.properties) || 'Verk';
+      const match = compensationRows.find(row => row.verk === turbineId && Math.abs(row.avstand - Math.round(n.dist)) <= 1);
+      const compensationText = match ? ` – ${formatSEK(match.ersattning)} SEK` : '';
+      return `${escapeHtml(turbineId)}: ${Math.round(n.dist)} m${compensationText}`;
+    });
+
+    const popupText =
+      `<b>Objekt-ID:</b> ${escapeHtml(objektId)}<br>` +
+      popupLines.join('<br>');
+
+    layer.bindPopup(popupText).openPopup();
+  });
+
+  layer.on('mouseout', function () {
+    if (layer._lines) {
+      layer._lines.forEach(line => map.removeLayer(line));
+      layer._lines = [];
+    }
+    layer.closePopup();
+  });
+
+  layer.on('click', function () {
+    const objektId = getResidenceId(feature.properties);
+    if (!objektId) return;
+
+    document.querySelectorAll('#resultTable tbody tr').forEach(tr => {
+      tr.classList.remove('highlight-row');
+    });
+
+    const matchRows = Array.from(document.querySelectorAll('#resultTable tbody tr')).filter(tr => {
+      return tr.children[0].textContent === objektId;
+    });
+
+    matchRows.forEach((row, index) => {
+      row.classList.add('highlight-row');
+      if (index === 0) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+
+    setTimeout(() => {
+      matchRows.forEach(row => row.classList.remove('highlight-row'));
+    }, 5000);
+  });
+}
+
+function updateResidenceSymbols() {
+  if (!residencesLayer) return;
+
+  const shouldUseHouseIcons = map.getZoom() >= HOUSE_ICON_ZOOM_THRESHOLD;
+  const layers = [...residencesLayer.getLayers()];
+
+  layers.forEach(layer => {
+    const isHouseMarker = layer instanceof L.Marker && !(layer instanceof L.CircleMarker);
+    if (isHouseMarker === shouldUseHouseIcons) return;
+
+    if (typeof layer.closePopup === 'function') {
+      layer.closePopup();
+    }
+
+    if (Array.isArray(layer._lines)) {
+      layer._lines.forEach(line => {
+        if (line && map.hasLayer(line)) {
+          map.removeLayer(line);
+        }
+      });
+      layer._lines = [];
+    }
+
+    const latlng = layer.getLatLng();
+    const feature = layer.feature;
+    const newLayer = createResidenceMarker(latlng, feature);
+
+    newLayer.feature = feature;
+    addResidenceInteractions(feature, newLayer);
+
+    residencesLayer.removeLayer(layer);
+    residencesLayer.addLayer(newLayer);
+  });
+}
 function formatSEK(value) {
   return Math.round(value || 0).toLocaleString('sv-SE');
 }
@@ -338,7 +504,17 @@ function addTurbineHoverBehavior(feature, layer) {
 
         if (promille > 0) {
           if (!layer._originalIcons.has(resLayer)) {
-            layer._originalIcons.set(resLayer, resLayer.getIcon());
+            if (resLayer instanceof L.Marker) {
+              layer._originalIcons.set(resLayer, resLayer.getIcon());
+            } else {
+              layer._originalIcons.set(resLayer, {
+                radius: resLayer.options.radius,
+                fillColor: resLayer.options.fillColor,
+                color: resLayer.options.color,
+                weight: resLayer.options.weight,
+                fillOpacity: resLayer.options.fillOpacity
+              });
+            }
           }
 
           const objektId = getResidenceId(resLayer.feature?.properties);
@@ -352,9 +528,9 @@ function addTurbineHoverBehavior(feature, layer) {
           }
 
           if (getsCompensationFromThisTurbine) {
-            resLayer.setIcon(houseCompensatedIcon);
+            setResidenceHoverState(resLayer, houseCompensatedIcon);
           } else {
-            resLayer.setIcon(houseAffectedIcon);
+            setResidenceHoverState(resLayer, houseAffectedIcon);
           }
         }
       });
@@ -369,7 +545,7 @@ function addTurbineHoverBehavior(feature, layer) {
 
     if (layer._originalIcons) {
       layer._originalIcons.forEach((icon, resLayer) => {
-        resLayer.setIcon(icon);
+        resetResidenceHoverState(resLayer, icon);
       });
       layer._originalIcons.clear();
     }
@@ -546,8 +722,12 @@ function processGeoJSON(rawGeoJSON, type) {
 
   const layer = L.geoJSON(geojson, {
     pointToLayer: function (feature, latlng) {
+      if (type === 'residence') {
+        return createResidenceMarker(latlng, feature);
+      }
+
       return L.marker(latlng, {
-        icon: type === 'turbine' ? turbineIcon : houseIcon
+        icon: turbineIcon
       });
     },
 
@@ -558,90 +738,8 @@ function processGeoJSON(rawGeoJSON, type) {
       }
 
       if (type === 'residence') {
-        layer.on('mouseover', function () {
-          if (!turbinesLayer) return;
-
-          const H = parseFloat(document.getElementById('totalhojd').value);
-          const maxDist = (!isNaN(H) && H > 0) ? 9 * H : Infinity;
-
-          const resPoint = turf.point(feature.geometry.coordinates);
-          const turbines = turbinesLayer.toGeoJSON().features;
-
-          const dists = turbines.map(t => {
-            const tPoint = turf.point(t.geometry.coordinates);
-            const dist = turf.distance(resPoint, tPoint, { units: 'kilometers' }) * 1000;
-            return { feature: t, dist };
-          });
-
-          const relevant = dists
-            .filter(d => d.dist <= maxDist)
-            .sort((a, b) => a.dist - b.dist)
-            .slice(0, 2);
-
-          if (relevant.length === 0) return;
-
-          relevant.forEach(n => {
-            const line = L.polyline([
-              [feature.geometry.coordinates[1], feature.geometry.coordinates[0]],
-              [n.feature.geometry.coordinates[1], n.feature.geometry.coordinates[0]]
-            ], {
-              color: 'orange',
-              dashArray: '4',
-              weight: 2
-            }).addTo(map);
-
-            layer._lines = layer._lines || [];
-            layer._lines.push(line);
-          });
-
-          const objektId = getResidenceId(feature.properties) || 'Okänt ID';
-          const displayedResult = getDisplayedResult();
-          const compensationRows = displayedResult?.rows?.filter(row => row.objektiden === objektId) || [];
-          const popupLines = relevant.map(n => {
-            const turbineId = getTurbineId(n.feature.properties) || 'Verk';
-            const match = compensationRows.find(row => row.verk === turbineId && Math.abs(row.avstand - Math.round(n.dist)) <= 1);
-            const compensationText = match ? ` – ${formatSEK(match.ersattning)} SEK` : '';
-            return `${escapeHtml(turbineId)}: ${Math.round(n.dist)} m${compensationText}`;
-          });
-
-          const popupText =
-            `<b>Objekt-ID:</b> ${escapeHtml(objektId)}<br>` +
-            popupLines.join('<br>');
-
-          layer.bindPopup(popupText).openPopup();
-        });
-
-        layer.on('mouseout', function () {
-          if (layer._lines) {
-            layer._lines.forEach(line => map.removeLayer(line));
-            layer._lines = [];
-          }
-          layer.closePopup();
-        });
-
-        layer.on('click', function () {
-          const objektId = getResidenceId(feature.properties);
-          if (!objektId) return;
-
-          document.querySelectorAll('#resultTable tbody tr').forEach(tr => {
-            tr.classList.remove('highlight-row');
-          });
-
-          const matchRows = Array.from(document.querySelectorAll('#resultTable tbody tr')).filter(tr => {
-            return tr.children[0].textContent === objektId;
-          });
-
-          matchRows.forEach((row, index) => {
-            row.classList.add('highlight-row');
-            if (index === 0) {
-              row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-          });
-
-          setTimeout(() => {
-            matchRows.forEach(row => row.classList.remove('highlight-row'));
-          }, 5000);
-        });
+        addResidenceInteractions(feature, layer);
+        return;
       }
     }
   });
@@ -683,6 +781,9 @@ function processGeoJSON(rawGeoJSON, type) {
   }
 
   updateResidenceVisibility();
+  if (type === 'residence') {
+    updateResidenceSymbols();
+  }
   autoCalculate();
 }
 
@@ -1349,6 +1450,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   map.on('zoomend', function () {
     updateResidenceVisibility();
+    updateResidenceSymbols();
   });
 
   setMode('scenario');

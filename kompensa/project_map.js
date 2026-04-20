@@ -212,6 +212,20 @@ function getProjectAndLayoutFromUrl() {
 // API-konfiguration
 // ==========================
 const API_BASE = window.KOMPENSA_API_BASE;
+const logoutBtn = document.getElementById("logoutBtn");
+
+async function logoutUser() {
+  try {
+    await fetch(`${API_BASE}/logout`, {
+      method: "POST",
+      credentials: "include"
+    });
+  } catch (error) {
+    console.error("Kunde inte logga ut:", error);
+  } finally {
+    window.location.href = "/kompensa/login.html";
+  }
+}
 const SCENARIO_CONFIG = window.KOMPENSA_CONFIG?.SCENARIOS_2035 || {};
 
 // ==========================
@@ -1470,5 +1484,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderScenarioCards();
   updateRevenuePreview();
   loadProjectData();
+
+  logoutBtn?.addEventListener("click", logoutUser);
 });
 

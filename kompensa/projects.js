@@ -1,5 +1,20 @@
 const API_BASE = window.KOMPENSA_API_BASE;
 
+const logoutBtn = document.getElementById("logoutBtn");
+
+async function logoutUser() {
+  try {
+    await fetch(`${API_BASE}/logout`, {
+      method: "POST",
+      credentials: "include"
+    });
+  } catch (error) {
+    console.error("Kunde inte logga ut:", error);
+  } finally {
+    window.location.href = "/kompensa/login.html";
+  }
+}
+
 let projects = [];
 
 const emptyState = document.getElementById("empty-state");
@@ -87,5 +102,6 @@ async function initProjectsPage() {
 
 createProjectBtn?.addEventListener("click", handleCreateProject);
 createProjectCard?.addEventListener("click", handleCreateProject);
+logoutBtn?.addEventListener("click", logoutUser);
 
 initProjectsPage();

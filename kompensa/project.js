@@ -8,6 +8,7 @@ const projectCompany = document.getElementById("project-company");
 const projectUpdated = document.getElementById("project-updated");
 const statusMessage = document.getElementById("status-message");
 const openMapBtn = document.getElementById("open-map-btn");
+const logoutBtn = document.getElementById("logoutBtn");
 
 const uploadLayoutBtn = document.getElementById("upload-layout-btn");
 const layoutFileInput = document.getElementById("layout-file-input");
@@ -86,6 +87,19 @@ async function fetchWithAuth(url, options = {}) {
   }
 
   return response;
+}
+
+async function logoutUser() {
+  try {
+    await fetch(`${API_BASE}/logout`, {
+      method: "POST",
+      credentials: "include"
+    });
+  } catch (error) {
+    console.error("Kunde inte logga ut:", error);
+  } finally {
+    window.location.href = "/kompensa/login.html";
+  }
 }
 
 async function fetchProject(projectId) {
@@ -334,6 +348,8 @@ function bindEvents(projectId) {
     const file = layoutFileInput.files?.[0];
     await handleLayoutUpload(projectId, file);
   });
+
+  logoutBtn?.addEventListener("click", logoutUser);
 }
 
 async function initProjectPage() {
