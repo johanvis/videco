@@ -905,7 +905,7 @@ function processGeoJSON(rawGeoJSON, type) {
       maxZoom: 12
     });
 
-    residencesMinZoom = map.getZoom() - 1;
+    residencesMinZoom = 9;
   }
 
  updateResidenceVisibility();
