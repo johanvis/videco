@@ -1,8 +1,11 @@
 ﻿// ==========================
 // Initiera kartan
 // ==========================
-let map = L.map('map').setView([62.0, 15.0], 5);
+let map = L.map('map', {
+  zoomControl: false
+}).setView([62.0, 15.0], 5);
 L.control.scale({ position: 'bottomright', imperial: false }).addTo(map);
+L.control.zoom({  position: 'topright'}).addTo(map);
 
 // ==========================
 // Bakgrundskartor
@@ -124,7 +127,7 @@ const houseCompensatedIcon = L.icon({
   iconAnchor: [17, 17]
 });
 
-const HOUSE_ICON_ZOOM_THRESHOLD = 15;
+const HOUSE_ICON_ZOOM_THRESHOLD = 14;
 
 // ==========================
 // Funktion för att byta ikon beroende på bakgrundskarta
@@ -777,7 +780,7 @@ function processGeoJSON(rawGeoJSON, type) {
       maxZoom: 14
     });
 
-    residencesMinZoom = map.getZoom();
+    residencesMinZoom = map.getZoom() -1;
   }
 
   updateResidenceVisibility();

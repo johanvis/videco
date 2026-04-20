@@ -1,7 +1,12 @@
 ﻿// ==========================
 // Initiera kartan
 // ==========================
-let map = L.map('map').setView([62.0, 15.0], 5);
+let map = L.map('map', {
+  zoomControl: false
+}).setView([62.0, 15.0], 5);
+L.control.zoom({
+  position: 'topright'
+}).addTo(map);
 L.control.scale({ position: 'bottomright', imperial: false }).addTo(map);
 
 // ==========================
@@ -144,6 +149,7 @@ const houseCompensatedIcon = L.icon({
   iconAnchor: [17, 17]
 });
 
+const HOUSE_ICON_ZOOM_THRESHOLD = 14;
 // ==========================
 // Funktion för att byta ikon beroende på bakgrundskarta
 // ==========================
@@ -175,6 +181,85 @@ function updateResidenceVisibility() {
       map.addLayer(residencesLayer);
     }
   }
+}
+
+function createResidenceMarker(latlng, feature) {
+  const zoom = map.getZoom();
+
+  if (zoom >= HOUSE_ICON_ZOOM_THRESHOLD) {
+    return L.marker(latlng, {
+      icon: houseIcon
+    });
+  }
+
+  return L.circleMarker(latlng, {
+    radius: 3,
+    fillColor: '#2c7fb8',
+    color: '#ffffff',
+    weight: 1,
+    fillOpacity: 0.6
+  });
+}
+
+function setResidenceHoverState(layer, icon) {
+  if (layer instanceof L.Marker) {
+    layer.setIcon(icon);
+    return;
+  }
+
+  const isCompensated = icon === houseCompensatedIcon;
+  layer.setStyle({
+    radius: isCompensated ? 5 : 4,
+    fillColor: isCompensated ? '#5ca65c' : '#f28e2b',
+    color: '#ffffff',
+    weight: 1,
+    fillOpacity: 0.9
+  });
+}
+
+function resetResidenceHoverState(layer, previousState) {
+  if (layer instanceof L.Marker) {
+    layer.setIcon(previousState);
+    return;
+  }
+
+  layer.setStyle(previousState);
+}
+
+function updateResidenceSymbols() {
+  if (!residencesLayer) return;
+  if (!map.hasLayer(residencesLayer)) return;
+
+  const shouldUseHouseIcons = map.getZoom() >= HOUSE_ICON_ZOOM_THRESHOLD;
+  const layers = [...residencesLayer.getLayers()];
+
+  layers.forEach(layer => {
+    const isHouseMarker = layer instanceof L.Marker && !(layer instanceof L.CircleMarker);
+    if (isHouseMarker === shouldUseHouseIcons) return;
+
+    if (typeof layer.closePopup === 'function') {
+      layer.closePopup();
+    }
+
+    if (Array.isArray(layer._lines)) {
+      layer._lines.forEach(line => {
+        if (line && map.hasLayer(line)) {
+          map.removeLayer(line);
+        }
+      });
+      layer._lines = [];
+    }
+
+    const latlng = layer.getLatLng();
+    const feature = layer.feature;
+    const newLayer = createResidenceMarker(latlng, feature);
+
+    newLayer.feature = feature;
+    addResidenceInteractions(feature, newLayer);
+
+    residencesLayer.removeLayer(layer);
+    residencesLayer.addLayer(newLayer);
+  });
 }
 
 // ==========================
@@ -447,8 +532,18 @@ function addTurbineHoverBehavior(feature, layer) {
 
         if (promille > 0) {
           if (!layer._originalIcons.has(resLayer)) {
-            layer._originalIcons.set(resLayer, resLayer.getIcon());
-          }
+  if (resLayer instanceof L.Marker) {
+    layer._originalIcons.set(resLayer, resLayer.getIcon());
+  } else {
+    layer._originalIcons.set(resLayer, {
+      radius: resLayer.options.radius,
+      fillColor: resLayer.options.fillColor,
+      color: resLayer.options.color,
+      weight: resLayer.options.weight,
+      fillOpacity: resLayer.options.fillOpacity
+    });
+  }
+}
 
           const objektId = getResidenceId(resLayer.feature?.properties);
           let getsCompensationFromThisTurbine = false;
@@ -461,10 +556,10 @@ function addTurbineHoverBehavior(feature, layer) {
           }
 
           if (getsCompensationFromThisTurbine) {
-            resLayer.setIcon(houseCompensatedIcon);
-          } else {
-            resLayer.setIcon(houseAffectedIcon);
-          }
+  setResidenceHoverState(resLayer, houseCompensatedIcon);
+} else {
+  setResidenceHoverState(resLayer, houseAffectedIcon);
+}
         }
       });
     }
@@ -477,11 +572,11 @@ function addTurbineHoverBehavior(feature, layer) {
     }
 
     if (layer._originalIcons) {
-      layer._originalIcons.forEach((icon, resLayer) => {
-        resLayer.setIcon(icon);
-      });
-      layer._originalIcons.clear();
-    }
+  layer._originalIcons.forEach((icon, resLayer) => {
+    resetResidenceHoverState(resLayer, icon);
+  });
+  layer._originalIcons.clear();
+}
 
     const hoverLegend = document.getElementById('hoverLegend');
     if (hoverLegend) {
@@ -654,11 +749,15 @@ function processGeoJSON(rawGeoJSON, type) {
   }
 
   const layer = L.geoJSON(geojson, {
-    pointToLayer: function (feature, latlng) {
-      return L.marker(latlng, {
-        icon: type === 'turbine' ? turbineIcon : houseIcon
-      });
-    },
+  pointToLayer: function (feature, latlng) {
+    if (type === 'residence') {
+      return createResidenceMarker(latlng, feature);
+    }
+
+    return L.marker(latlng, {
+      icon: turbineIcon
+    });
+  },
 
     onEachFeature: function (feature, layer) {
       if (type === 'turbine') {
@@ -806,12 +905,13 @@ function processGeoJSON(rawGeoJSON, type) {
       maxZoom: 12
     });
 
-    residencesMinZoom = 9;
+    residencesMinZoom = map.getZoom() - 1;
   }
 
-  updateResidenceVisibility();
-  updateTotalhojdState();
-  autoCalculate();
+ updateResidenceVisibility();
+updateResidenceSymbols();
+updateTotalhojdState();
+autoCalculate();
 }
 
 // ==========================
@@ -1581,9 +1681,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  map.on('zoomend', function () {
-    updateResidenceVisibility();
-  });
+ map.on('zoomend', function () {
+  updateResidenceVisibility();
+  updateResidenceSymbols();
+});
 
   setMode('scenario');
   renderScenarioCards();

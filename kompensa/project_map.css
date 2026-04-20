@@ -32,7 +32,7 @@ body {
 
 .map-menu {
   position: fixed;
-  top: 96px;
+  top: calc(72px + 30px);
   left: 14px;
   width: 285px;
   max-height: calc(100vh - 116px);
