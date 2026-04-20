@@ -2,122 +2,15 @@
    KOMPENSA UI – PROJECT MAP
 ========================= */
 
-:root {
-  --primary: #2a5f63;
-  --primary-hover: #234f52;
-  --accent: #2f6f73;
-
-  --bg: #f3f5f2;
-  --bg-soft: #e8eeea;
-  --surface: rgba(255, 255, 255, 0.9);
-  --surface-strong: rgba(255, 255, 255, 0.96);
-  --surface-soft: #eef4f2;
-  --text: #111111;
-  --muted: #5d6762;
-  --border: rgba(42, 95, 99, 0.14);
-  --shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
-  --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.08);
-  --radius: 20px;
-  --radius-sm: 14px;
-}
-
 html,
 body {
-  margin: 0;
-  padding: 0;
   height: 100%;
-  font-family: Arial, Helvetica, sans-serif;
-  background: var(--bg);
-  color: var(--text);
 }
 
 body {
   line-height: 1.5;
   overflow: hidden;
-}
-
-/* =========================
-   TOPBAR
-========================= */
-
-.topbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 72px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 22px;
-  z-index: 1000;
-  box-sizing: border-box;
-}
-
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-}
-
-.topbar-logo-link {
-  display: inline-flex;
-  align-items: center;
-  text-decoration: none;
-}
-
-.topbar-logo {
-  height: 34px;
-  width: auto;
-  display: block;
-}
-
-.topbar-context {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.topbar-project-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #6a746b;
-}
-
-.topbar-project-name {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 360px;
-}
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.topbar-link {
-  display: inline-flex;
-  align-items: center;
-  text-decoration: none;
-  color: var(--primary);
-  font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.topbar-link:hover {
-  text-decoration: underline;
+  background: var(--bg);
 }
 
 /* =========================
@@ -872,4 +765,10 @@ body {
   .results-close-btn {
     width: 100%;
   }
+
+  /* Disabled state för resultat-knapp */
+  .results-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 }

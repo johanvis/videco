@@ -64,12 +64,29 @@ map.on('baselayerchange', function (e) {
 
 let turbinesLayer, residencesLayer;
 let currentRows = [];
-let residencesMinZoom = null;
+let residencesMinZoom = 9;
 let activeScenario = 'base';
 let currentMode = 'scenario';
 let scenarioResults = { low: null, base: null, high: null };
 let manualResult = null;
 let resultsOverlayEl = null;
+
+let cachedTurbines = null;
+let cachedResidences = null;
+
+function getCachedTurbines() {
+  if (!cachedTurbines && turbinesLayer) {
+    cachedTurbines = turbinesLayer.toGeoJSON().features;
+  }
+  return cachedTurbines;
+}
+
+function getCachedResidences() {
+  if (!cachedResidences && residencesLayer) {
+    cachedResidences = residencesLayer.toGeoJSON().features;
+  }
+  return cachedResidences;
+}
 
 const scenarioMeta = {
   low: { label: 'Låg', key: 'low' },
@@ -168,7 +185,7 @@ function formatSEK(value) {
 }
 
 function getPromilleForDistance(distMeters, H) {
-  if (!H || isNaN(H) || H <= 0) return 0;
+  if (!H || isNaN(H) || H <= 50) return 0;
   if (distMeters <= 5 * H) return 2.5;
   if (distMeters <= 6 * H) return 2.0;
   if (distMeters <= 7 * H) return 1.5;
@@ -211,21 +228,24 @@ function getProjectAndLayoutFromUrl() {
 // ==========================
 // API-konfiguration
 // ==========================
-const API_BASE = window.KOMPENSA_API_BASE;
-const logoutBtn = document.getElementById("logoutBtn");
+const API_BASE = window.KOMPENSA_API_BASE || '';
+const logoutBtn = document.getElementById('logoutBtn');
+const menuToggleBtn = document.getElementById('menuToggleBtn');
+const menuDropdown = document.getElementById('menuDropdown');
 
 async function logoutUser() {
   try {
     await fetch(`${API_BASE}/logout`, {
-      method: "POST",
-      credentials: "include"
+      method: 'POST',
+      credentials: 'include'
     });
   } catch (error) {
-    console.error("Kunde inte logga ut:", error);
+    console.error('Kunde inte logga ut:', error);
   } finally {
-    window.location.href = "/kompensa/login.html";
+    window.location.href = '/kompensa/login.html';
   }
 }
+
 const SCENARIO_CONFIG = window.KOMPENSA_CONFIG?.SCENARIOS_2035 || {};
 
 // ==========================
@@ -339,13 +359,34 @@ function getCurrentResultLabel() {
     : 'manuellt läge';
 }
 
+function updateTotalhojdState() {
+  const totalhojdEl = document.getElementById('totalhojd');
+  const totalhojdHelpEl = document.getElementById('totalhojdHelp');
+  const openResultsBtn = document.getElementById('openResultsBtn');
+
+  if (!totalhojdEl) return false;
+
+  const totalhojd = parseFloat(totalhojdEl.value);
+  const isValid = !isNaN(totalhojd) && totalhojd > 50;
+
+  if (totalhojdHelpEl) {
+    totalhojdHelpEl.style.display = isValid ? 'none' : 'block';
+  }
+
+  if (openResultsBtn) {
+    openResultsBtn.disabled = !isValid;
+  }
+
+  return isValid;
+}
+
 // ==========================
 // Hoverbeteende för verk
 // ==========================
 function addTurbineHoverBehavior(feature, layer) {
   layer.on('mouseover', function () {
     const H = parseFloat(document.getElementById('totalhojd').value);
-    if (isNaN(H) || H <= 0) return;
+    if (isNaN(H) || H <= 50) return;
 
     const center = layer.getLatLng();
     const turbineName = getTurbineId(feature.properties) || 'Verk';
@@ -530,7 +571,7 @@ function reprojectGeoJSON(geojson, fromCrs, toCrs = 'EPSG:4326') {
   if (typeof proj4 === 'undefined') return geojson;
   if (!proj4.defs[fromCrs]) return geojson;
 
-  const transformCoord = (coord) => {
+  const transformCoord = coord => {
     const [x, y] = coord;
     const [lon, lat] = proj4(fromCrs, toCrs, [x, y]);
     return [lon, lat];
@@ -630,10 +671,16 @@ function processGeoJSON(rawGeoJSON, type) {
           if (!turbinesLayer) return;
 
           const H = parseFloat(document.getElementById('totalhojd').value);
-          const maxDist = (!isNaN(H) && H > 0) ? 9 * H : Infinity;
+          const maxDist = !isNaN(H) && H > 50 ? 9 * H : Infinity;
+
+          if (typeof turf === 'undefined') {
+            console.error('Turf saknas');
+            return;
+          }
 
           const resPoint = turf.point(feature.geometry.coordinates);
-          const turbines = turbinesLayer.toGeoJSON().features;
+          const turbines = getCachedTurbines();
+          if (!turbines || turbines.length === 0) return;
 
           const dists = turbines.map(t => {
             const tPoint = turf.point(t.geometry.coordinates);
@@ -648,15 +695,23 @@ function processGeoJSON(rawGeoJSON, type) {
 
           if (relevant.length === 0) return;
 
+          if (layer._lines) {
+            layer._lines.forEach(line => map.removeLayer(line));
+            layer._lines = [];
+          }
+
           relevant.forEach(n => {
-            const line = L.polyline([
-              [feature.geometry.coordinates[1], feature.geometry.coordinates[0]],
-              [n.feature.geometry.coordinates[1], n.feature.geometry.coordinates[0]]
-            ], {
-              color: 'orange',
-              dashArray: '4',
-              weight: 2
-            }).addTo(map);
+            const line = L.polyline(
+              [
+                [feature.geometry.coordinates[1], feature.geometry.coordinates[0]],
+                [n.feature.geometry.coordinates[1], n.feature.geometry.coordinates[0]]
+              ],
+              {
+                color: 'orange',
+                dashArray: '4',
+                weight: 2
+              }
+            ).addTo(map);
 
             layer._lines = layer._lines || [];
             layer._lines.push(line);
@@ -665,16 +720,17 @@ function processGeoJSON(rawGeoJSON, type) {
           const objektId = getResidenceId(feature.properties) || 'Okänt ID';
           const displayedResult = getDisplayedResult();
           const compensationRows = displayedResult?.rows?.filter(row => row.objektiden === objektId) || [];
+
           const popupLines = relevant.map(n => {
             const turbineId = getTurbineId(n.feature.properties) || 'Verk';
-            const match = compensationRows.find(row => row.verk === turbineId && Math.abs(row.avstand - Math.round(n.dist)) <= 1);
+            const match = compensationRows.find(
+              row => row.verk === turbineId && Math.abs(row.avstand - Math.round(n.dist)) <= 1
+            );
             const compensationText = match ? ` – ${formatSEK(match.ersattning)} SEK` : '';
             return `${escapeHtml(turbineId)}: ${Math.round(n.dist)} m${compensationText}`;
           });
 
-          const popupText =
-            `<b>Objekt-ID:</b> ${escapeHtml(objektId)}<br>` +
-            popupLines.join('<br>');
+          const popupText = `<b>Objekt-ID:</b> ${escapeHtml(objektId)}<br>` + popupLines.join('<br>');
 
           layer.bindPopup(popupText).openPopup();
         });
@@ -718,6 +774,8 @@ function processGeoJSON(rawGeoJSON, type) {
     if (turbinesLayer) map.removeLayer(turbinesLayer);
     turbinesLayer = layer;
 
+    cachedTurbines = null;
+
     const antalVerkEl = document.getElementById('antalVerk');
     if (antalVerkEl) {
       antalVerkEl.textContent = geojson.features.length;
@@ -737,6 +795,7 @@ function processGeoJSON(rawGeoJSON, type) {
   if (type === 'residence') {
     if (residencesLayer) map.removeLayer(residencesLayer);
     residencesLayer = layer;
+    cachedResidences = null;
   }
 
   layer.addTo(map);
@@ -747,10 +806,11 @@ function processGeoJSON(rawGeoJSON, type) {
       maxZoom: 12
     });
 
-    residencesMinZoom = map.getZoom() - 1;
+    residencesMinZoom = 9;
   }
 
   updateResidenceVisibility();
+  updateTotalhojdState();
   autoCalculate();
 }
 
@@ -792,12 +852,21 @@ function updateRevenuePreview() {
 // Beräknar ersättningsrader för ett visst scenario eller manuellt läge
 // ==========================
 function calculateRowsForScenario({ prisSek, produktion, label, key, mode }, totalhojd) {
-  if ([prisSek, produktion, totalhojd].some(isNaN) || totalhojd <= 0) return null;
+  if ([prisSek, produktion, totalhojd].some(isNaN) || totalhojd <= 50) return null;
   if (!turbinesLayer || !residencesLayer) return null;
 
+  if (typeof turf === 'undefined') {
+    console.error('Turf saknas');
+    return null;
+  }
+
   const intaktPerVerk = prisSek * produktion * 1000;
-  const residences = residencesLayer.toGeoJSON().features;
-  const turbines = turbinesLayer.toGeoJSON().features;
+  const residences = getCachedResidences();
+  if (!residences) return null;
+
+  const turbines = getCachedTurbines();
+  if (!turbines || turbines.length === 0) return null;
+
   const antalVerk = turbines.length;
   const intaktAnlaggning = intaktPerVerk * antalVerk;
   const rows = [];
@@ -812,14 +881,13 @@ function calculateRowsForScenario({ prisSek, produktion, label, key, mode }, tot
     }
 
     const dists = turbines.map(turbine => {
-      const dist = turf.distance(
-        turf.point(resCoord),
-        turf.point(turbine.geometry.coordinates),
-        { units: 'kilometers' }
-      ) * 1000;
+      const dist =
+        turf.distance(turf.point(resCoord), turf.point(turbine.geometry.coordinates), {
+          units: 'kilometers'
+        }) * 1000;
 
       const promille = getPromilleForDistance(dist, totalhojd);
-      const ersattningPre = promille > 0 ? (intaktPerVerk * promille / 1000) : 0;
+      const ersattningPre = promille > 0 ? (intaktPerVerk * promille) / 1000 : 0;
 
       return {
         dist,
@@ -830,7 +898,7 @@ function calculateRowsForScenario({ prisSek, produktion, label, key, mode }, tot
     });
 
     const relevanta = dists
-      .filter(item => item.promille > 0)
+      .filter(item => item && item.promille > 0)
       .sort((a, b) => {
         if (b.ersattningPre !== a.ersattningPre) return b.ersattningPre - a.ersattningPre;
         return a.dist - b.dist;
@@ -905,13 +973,35 @@ function getDisplayedResult() {
 // Kör om beräkningarna när data eller inställningar ändras
 // ==========================
 function autoCalculate() {
-  if (!turbinesLayer || !residencesLayer) {
+  const totalhojd = parseFloat(document.getElementById('totalhojd')?.value);
+
+  if (isNaN(totalhojd) || totalhojd <= 50) {
+    currentRows = [];
+    scenarioResults = { low: null, base: null, high: null };
+    manualResult = null;
+    renderTable([]);
+    renderTurbineCostTable([]);
+    renderScenarioCards();
+
+    const summaryBox = document.getElementById('summaryBox');
+    if (summaryBox) {
+      summaryBox.style.display = 'none';
+      summaryBox.innerHTML = '';
+    }
+
+    const calculationInfoBox = document.getElementById('calculationInfoBox');
+    if (calculationInfoBox) {
+      calculationInfoBox.style.display = 'none';
+    }
+
     updateRevenuePreview();
     return;
   }
 
-  const totalhojd = parseFloat(document.getElementById('totalhojd')?.value);
-  if (isNaN(totalhojd) || totalhojd <= 0) return;
+  if (!turbinesLayer || !residencesLayer) {
+    updateRevenuePreview();
+    return;
+  }
 
   const scenarioConfig = getScenarioConfig();
   scenarioResults.low = calculateRowsForScenario(scenarioConfig.low, totalhojd);
@@ -942,6 +1032,16 @@ function applyCurrentModeResult() {
   const calculationInfoBox = document.getElementById('calculationInfoBox');
 
   if (!result) {
+    currentRows = [];
+    renderTable([]);
+    renderTurbineCostTable([]);
+
+    const summaryBox = document.getElementById('summaryBox');
+    if (summaryBox) {
+      summaryBox.style.display = 'none';
+      summaryBox.innerHTML = '';
+    }
+
     if (calculationInfoBox) {
       calculationInfoBox.style.display = 'none';
     }
@@ -966,13 +1066,15 @@ function updateResultsTitle(view = 'residence') {
   const resultsTitle = document.getElementById('resultsTitle');
   if (!resultsTitle) return;
 
-  const suffix = currentMode === 'scenario'
-    ? `scenario ${scenarioMeta[activeScenario]?.label || 'Bas'}`
-    : 'manuellt läge';
+  const suffix =
+    currentMode === 'scenario'
+      ? `scenario ${scenarioMeta[activeScenario]?.label || 'Bas'}`
+      : 'manuellt läge';
 
-  resultsTitle.textContent = view === 'residence'
-    ? `Resultat: Närboendeersättning per bostad – ${suffix}`
-    : `Resultat: Närboendeersättning per verk – ${suffix}`;
+  resultsTitle.textContent =
+    view === 'residence'
+      ? `Resultat: Närboendeersättning per bostad – ${suffix}`
+      : `Resultat: Närboendeersättning per verk – ${suffix}`;
 }
 
 // ==========================
@@ -985,6 +1087,7 @@ function setMode(mode) {
   const manualBtn = document.getElementById('manualModeBtn');
   const scenarioControls = document.getElementById('scenarioControls');
   const manualControls = document.getElementById('manualControls');
+
   if (scenarioBtn) scenarioBtn.classList.toggle('active', mode === 'scenario');
   if (manualBtn) manualBtn.classList.toggle('active', mode === 'manual');
   if (scenarioControls) scenarioControls.style.display = mode === 'scenario' ? 'block' : 'none';
@@ -1068,16 +1171,17 @@ function updateSummary(result) {
     return;
   }
 
-  const genomsnitt = result.antalBostader > 0 ? (result.totalErs / result.antalBostader) : 0;
-  const kostnadPerVerk = result.antalVerk > 0 ? (result.totalErs / result.antalVerk) : 0;
+  const genomsnitt = result.antalBostader > 0 ? result.totalErs / result.antalBostader : 0;
+  const kostnadPerVerk = result.antalVerk > 0 ? result.totalErs / result.antalVerk : 0;
   const capStatus = result.capApplied
     ? `Ja, skalfaktor ${result.capFactor.toFixed(3).replace('.', ',')}`
     : 'Nej';
 
-  const heading = currentMode === 'scenario'
-    ? `Sammanfattning – scenario ${result.label}`
-    : 'Sammanfattning – manuellt läge';
-  
+  const heading =
+    currentMode === 'scenario'
+      ? `Sammanfattning – scenario ${result.label}`
+      : 'Sammanfattning – manuellt läge';
+
   const prisPerKwh = result.prisSek / 1000;
   const prisPerKwhText = prisPerKwh.toLocaleString('sv-SE', {
     minimumFractionDigits: 2,
@@ -1105,7 +1209,8 @@ function updateSummary(result) {
   const detail = document.getElementById('capInfoDetail');
   if (toggle && detail) {
     toggle.onclick = () => {
-      detail.style.display = (detail.style.display === 'none' || detail.style.display === '') ? 'block' : 'none';
+      detail.style.display =
+        detail.style.display === 'none' || detail.style.display === '' ? 'block' : 'none';
     };
   }
 }
@@ -1172,11 +1277,6 @@ function renderTable(data) {
     `;
     tbody.appendChild(tr);
   });
-
-  const openResultsBtn = document.getElementById('openResultsBtn');
-  if (openResultsBtn) {
-    openResultsBtn.style.display = data.length > 0 ? 'block' : 'none';
-  }
 
   if (resultsOverlayEl && data.length === 0) {
     resultsOverlayEl.style.display = 'none';
@@ -1347,11 +1447,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     el.addEventListener('input', () => {
+      updateTotalhojdState();
       updateRevenuePreview();
       autoCalculate();
     });
 
     el.addEventListener('change', () => {
+      updateTotalhojdState();
       updateRevenuePreview();
       autoCalculate();
     });
@@ -1381,7 +1483,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!table) return;
 
       const scenarioOrMode = currentMode === 'scenario' ? activeScenario : 'manual';
-      const currentLabel = currentMode === 'scenario' ? (scenarioMeta[activeScenario]?.label || 'Bas') : 'Manuell';
+      const currentLabel = currentMode === 'scenario' ? scenarioMeta[activeScenario]?.label || 'Bas' : 'Manuell';
       const sheetName = showingResidenceTable ? `Per bostad ${currentLabel}` : `Per verk ${currentLabel}`;
       const fileName = showingResidenceTable
         ? `kompensa_narboendeersattning_per_bostad_${scenarioOrMode}.xlsx`
@@ -1429,6 +1531,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (openResultsBtn && closeResultsBtn && resultsOverlayEl) {
     openResultsBtn.addEventListener('click', () => {
+      const isValidTotalhojd = updateTotalhojdState();
+      if (!isValidTotalhojd) return;
+
       const isHidden = resultsOverlayEl.style.display === 'none' || resultsOverlayEl.style.display === '';
       if (isHidden) {
         resultsOverlayEl.style.display = 'block';
@@ -1482,9 +1587,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setMode('scenario');
   renderScenarioCards();
+  updateTotalhojdState();
   updateRevenuePreview();
   loadProjectData();
 
-  logoutBtn?.addEventListener("click", logoutUser);
-});
+  logoutBtn?.addEventListener('click', logoutUser);
 
+  menuToggleBtn?.addEventListener('click', function (event) {
+    event.stopPropagation();
+    menuDropdown?.classList.toggle('show');
+  });
+
+  document.addEventListener('click', function (event) {
+    if (!menuDropdown || !menuToggleBtn) return;
+
+    const clickedInsideMenu = menuDropdown.contains(event.target);
+    const clickedMenuButton = menuToggleBtn.contains(event.target);
+
+    if (!clickedInsideMenu && !clickedMenuButton) {
+      menuDropdown.classList.remove('show');
+    }
+  });
+});
