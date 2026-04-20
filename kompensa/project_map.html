@@ -168,25 +168,36 @@
       </div>
     </details>
 
-    <details class="menu-group">
+    <details class="menu-group" open>
       <summary>Totalhöjd</summary>
       <div class="menu-content">
-        <div class="mb-1">
-          <label class="form-label" for="totalhojd">
-            Verkens totalhöjd (m)
-            <button
-              type="button"
-              class="info-icon-btn"
-              title="Totalhöjden används för att beräkna promillezoner runt varje verk, till exempel 5H till 9H."
-            >?</button>
-          </label>
-          <input type="number" id="totalhojd" step="1" value="210" class="form-control form-control-sm">
+       <div class="mb-1">
+       <label class="form-label" for="totalhojd">
+        Verkens totalhöjd (m)
+        <button
+          type="button"
+          class="info-icon-btn"
+          title="Totalhöjden används för att beräkna promillezoner runt varje verk, till exempel 5H till 9H.">?
+        </button>
+       </label>
+
+          <input
+            type="number"
+            id="totalhojd"
+            step="1"
+            class="form-control form-control-sm"
+          >
+
+       <!-- NY: hjälprad -->
+          <div id="totalhojdHelp" class="form-text text-danger" style="display: block;">
+          Ange totalhöjd för verken.
+          </div>
         </div>
       </div>
     </details>
 
     <div class="map-menu-footer">
-      <button id="openResultsBtn" class="results-toggle-btn" style="display: none;">
+      <button id="openResultsBtn" class="results-toggle-btn" disabled>
         Resultat i tabellform
       </button>
     </div>
