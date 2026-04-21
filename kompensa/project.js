@@ -4,7 +4,6 @@ const MAX_LAYOUTS = 5;
 const projectTitle = document.getElementById("project-title");
 const projectSubtitle = document.getElementById("project-subtitle");
 const projectName = document.getElementById("project-name");
-const projectHouseRadius = document.getElementById("project-house-radius");
 const projectHouseCount = document.getElementById("project-house-count");
 const projectUpdated = document.getElementById("project-updated");
 const statusMessage = document.getElementById("status-message");
@@ -196,8 +195,10 @@ function updateProjectSummary(project) {
   projectSubtitle.textContent =
     "Här ser du projektets layouter och väljer vilken layout som ska användas i resultatkartan.";
   projectName.textContent = project.name || "–";
-  projectHouseRadius.textContent = resolveHouseFetchDistanceKm(project);
+
+  // Uppdatera endast antal bostäder (ingen radius längre)
   projectHouseCount.textContent = resolveHouseCount(project);
+
   projectUpdated.textContent = formatDate(project.updatedAt);
 }
 
