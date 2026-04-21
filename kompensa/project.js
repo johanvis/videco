@@ -4,7 +4,8 @@ const MAX_LAYOUTS = 5;
 const projectTitle = document.getElementById("project-title");
 const projectSubtitle = document.getElementById("project-subtitle");
 const projectName = document.getElementById("project-name");
-const projectCompany = document.getElementById("project-company");
+const projectHouseRadius = document.getElementById("project-house-radius");
+const projectHouseCount = document.getElementById("project-house-count");
 const projectUpdated = document.getElementById("project-updated");
 const statusMessage = document.getElementById("status-message");
 const openMapBtn = document.getElementById("open-map-btn");
@@ -131,6 +132,63 @@ async function fetchLayouts(projectId) {
   return await response.json();
 }
 
+function resolveHouseCount(project) {
+  const summary = project?.summary || {};
+
+  return (
+    summary.houseCount ??
+    summary.housesCount ??
+    summary.residenceCount ??
+    summary.residencesCount ??
+    project?.houseCount ??
+    project?.housesCount ??
+    "–"
+  );
+}
+
+function resolveHouseFetchDistanceKm(project) {
+  const summary = project?.summary || {};
+
+  const rawDistance =
+    summary.houseFetchDistanceKm ??
+    summary.fetchDistanceKm ??
+    summary.bufferDistanceKm ??
+    summary.houseFetchRadiusKm ??
+    project?.houseFetchDistanceKm ??
+    project?.fetchDistanceKm ??
+    project?.bufferDistanceKm ??
+    project?.houseFetchRadiusKm ??
+    null;
+
+  if (rawDistance !== null && rawDistance !== undefined && rawDistance !== "") {
+    const numeric = Number(rawDistance);
+    if (!Number.isNaN(numeric)) {
+      return numeric % 1 === 0 ? String(numeric) : numeric.toFixed(1);
+    }
+    return String(rawDistance);
+  }
+
+  const rawMeters =
+    summary.bufferDistanceMeters ??
+    summary.fetchDistanceMeters ??
+    summary.houseFetchDistanceMeters ??
+    project?.bufferDistanceMeters ??
+    project?.fetchDistanceMeters ??
+    project?.houseFetchDistanceMeters ??
+    null;
+
+  if (rawMeters !== null && rawMeters !== undefined && rawMeters !== "") {
+    const numeric = Number(rawMeters);
+    if (!Number.isNaN(numeric)) {
+      const km = numeric / 1000;
+      return km % 1 === 0 ? String(km) : km.toFixed(1);
+    }
+    return "–";
+  }
+
+  return "–";
+}
+
 function updateProjectSummary(project) {
   currentProject = project;
 
@@ -138,7 +196,8 @@ function updateProjectSummary(project) {
   projectSubtitle.textContent =
     "Här ser du projektets layouter och väljer vilken layout som ska användas i resultatkartan.";
   projectName.textContent = project.name || "–";
-  projectCompany.textContent = project.company || "–";
+  projectHouseRadius.textContent = resolveHouseFetchDistanceKm(project);
+  projectHouseCount.textContent = resolveHouseCount(project);
   projectUpdated.textContent = formatDate(project.updatedAt);
 }
 
@@ -150,50 +209,55 @@ function ensureSelectedLayout() {
   selectedLayoutId = layouts.length ? layouts[0].id : null;
 }
 
+function selectLayout(layoutId, title) {
+  selectedLayoutId = layoutId;
+  renderLayouts();
+  setStatus(`Vald layout: ${title}`, "success");
+}
+
 function renderLayouts() {
   layoutList.innerHTML = "";
 
   if (!layouts.length) {
-    layoutEmpty.style.display = "block";
+    layoutEmpty.classList.remove("is-hidden");
     updateLayoutLimitInfo(false);
     return;
   }
 
-  layoutEmpty.style.display = "none";
+  layoutEmpty.classList.add("is-hidden");
 
   layouts.forEach((layout, index) => {
-    const item = document.createElement("div");
-    item.className = `layout-item ${layout.id === selectedLayoutId ? "active" : ""}`;
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = `layout-item layout-select-card ${layout.id === selectedLayoutId ? "active" : ""}`;
 
     const title = layout.name || `Layout ${index + 1}`;
     const turbineText = layout.turbineCount ?? "–";
-    const houseText = currentProject?.summary?.houseCount ?? "–";
+    const createdText = formatDate(layout.createdAt);
+    const baseText = layout.isBase ? " · Ursprungslayout" : "";
 
     item.innerHTML = `
       <div class="layout-main">
         <p class="layout-title">${escapeHtml(title)}</p>
         <p class="layout-meta">
           Turbiner: ${escapeHtml(turbineText)} ·
-          Bostäder: ${escapeHtml(houseText)} ·
-          Skapad ${escapeHtml(formatDate(layout.createdAt))}${layout.isBase ? " · Ursprungslayout" : ""}
+          Skapad ${escapeHtml(createdText)}${baseText}
         </p>
       </div>
       <div class="layout-actions">
-        <button class="btn btn-secondary open-layout-btn" type="button">Välj</button>
+        <span class="layout-select-label">${layout.id === selectedLayoutId ? "Vald layout" : "Klicka för att välja"}</span>
         ${layout.isBase ? "" : '<button class="btn btn-danger delete-layout-btn" type="button">Ta bort</button>'}
       </div>
     `;
 
-    const openBtn = item.querySelector(".open-layout-btn");
-    openBtn.addEventListener("click", () => {
-      selectedLayoutId = layout.id;
-      renderLayouts();
-      setStatus(`Vald layout: ${title}`, "success");
+    item.addEventListener("click", () => {
+      selectLayout(layout.id, title);
     });
 
     const deleteBtn = item.querySelector(".delete-layout-btn");
     if (deleteBtn) {
-      deleteBtn.addEventListener("click", async () => {
+      deleteBtn.addEventListener("click", async (event) => {
+        event.stopPropagation();
         await handleDeleteLayout(layout.id, title);
       });
     }
@@ -259,8 +323,25 @@ async function refreshLayouts(projectId) {
   return true;
 }
 
+function isAcceptedLayoutFile(file) {
+  if (!file) return false;
+
+  const lowerName = file.name.toLowerCase();
+  return (
+    lowerName.endsWith(".zip") ||
+    lowerName.endsWith(".geojson") ||
+    lowerName.endsWith(".gpkg")
+  );
+}
+
 async function handleLayoutUpload(projectId, file) {
   if (!file) return;
+
+  if (!isAcceptedLayoutFile(file)) {
+    setStatus("Ogiltigt filformat. Använd ZIP, GeoJSON eller GeoPackage.", "error");
+    layoutFileInput.value = "";
+    return;
+  }
 
   if (layouts.length >= MAX_LAYOUTS) {
     updateLayoutLimitInfo(true);

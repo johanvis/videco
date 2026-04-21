@@ -371,6 +371,7 @@ body {
   min-width: 170px;
   cursor: pointer;
   appearance: none;
+  -webkit-appearance: none;
 }
 
 .btn-primary {
@@ -905,6 +906,12 @@ body {
   line-height: 1.25;
 }
 
+/* Project info refinements */
+
+.project-info-card {
+  background: rgba(255, 255, 255, 0.78);
+}
+
 .project-meta-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -916,6 +923,11 @@ body {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px 16px 15px;
+}
+
+.project-meta-item-highlight {
+  background: rgba(42, 95, 99, 0.06);
+  border-color: rgba(42, 95, 99, 0.2);
 }
 
 .project-meta-label {
@@ -935,6 +947,8 @@ body {
   color: var(--text);
   word-break: break-word;
 }
+
+/* Layout section */
 
 .project-layouts-section {
   margin-top: 0;
@@ -960,7 +974,14 @@ body {
   flex-wrap: wrap;
   gap: 14px;
   align-items: center;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
+}
+
+.project-toolbar-note {
+  margin: 0 0 18px;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--muted);
 }
 
 .project-toolbar-status {
@@ -994,7 +1015,8 @@ body {
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
-    transform 0.18s ease;
+    transform 0.18s ease,
+    background 0.18s ease;
 }
 
 .layout-item:hover {
@@ -1005,6 +1027,21 @@ body {
   border-color: rgba(42, 95, 99, 0.45);
   box-shadow: 0 0 0 3px rgba(42, 95, 99, 0.08);
   background: rgba(238, 244, 242, 0.8);
+}
+
+.layout-item.layout-select-card {
+  cursor: pointer;
+}
+
+.layout-item.layout-select-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.07);
+}
+
+.layout-item.layout-select-card.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(42, 95, 99, 0.12);
+  background: rgba(235, 242, 240, 0.9);
 }
 
 .layout-main {
@@ -1032,6 +1069,25 @@ body {
   flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
+}
+
+.layout-select-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--border);
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.layout-item.active .layout-select-label {
+  background: rgba(42, 95, 99, 0.12);
+  border-color: rgba(42, 95, 99, 0.24);
+  color: var(--primary);
 }
 
 .project-empty-state {
@@ -1180,5 +1236,10 @@ body {
     height: 180px;
     right: -30px;
     bottom: 60px;
+  }
+
+  .layout-select-label {
+    width: 100%;
+    justify-content: center;
   }
 }
