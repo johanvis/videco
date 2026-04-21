@@ -60,7 +60,6 @@ function renderProjects() {
 
       <div class="project-card-body">
         <h3>${project.name}</h3>
-        <p class="project-meta">Företag: ${project.company}</p>
         <p class="project-meta">Senast ändrad: ${formatDate(project.updatedAt)}</p>
       </div>
     `;
