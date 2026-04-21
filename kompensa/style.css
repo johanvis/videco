@@ -697,9 +697,26 @@ body {
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.18) 0%,
-    rgba(0, 0, 0, 0.52) 100%
+    rgba(0, 0, 0, 0.25) 0%,
+    rgba(0, 0, 0, 0.65) 100%
   );
+  transition: background 0.25s ease;
+}
+
+.project-card.with-image:hover::before,
+.project-card-button.with-image:hover::before,
+.project-card-link.with-image:hover::before {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0.75) 100%
+  );
+}
+
+.project-card.with-image h3,
+.project-card-button.with-image h3,
+.project-card-link.with-image h3 {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 .project-card.with-image > *,
@@ -724,9 +741,9 @@ body {
 .project-card.with-image .project-badge,
 .project-card-button.with-image .project-badge,
 .project-card-link.with-image .project-badge {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.35);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .project-card-button,
