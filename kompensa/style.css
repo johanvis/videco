@@ -678,11 +678,65 @@ body {
   background: var(--surface);
   backdrop-filter: blur(10px);
   border: 1px solid var(--border);
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
   transition:
     transform 0.18s ease,
     box-shadow 0.18s ease,
     border-color 0.18s ease,
     background 0.18s ease;
+}
+
+.project-card.with-image,
+.project-card-button.with-image,
+.project-card-link.with-image {
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: #ffffff;
+}
+
+.project-card.with-image::before,
+.project-card-button.with-image::before,
+.project-card-link.with-image::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.18) 0%,
+    rgba(0, 0, 0, 0.52) 100%
+  );
+}
+
+.project-card.with-image > *,
+.project-card-button.with-image > *,
+.project-card-link.with-image > * {
+  position: relative;
+  z-index: 1;
+}
+
+.project-card.with-image p,
+.project-card-button.with-image p,
+.project-card-link.with-image p,
+.project-card.with-image h2,
+.project-card.with-image h3,
+.project-card-button.with-image h2,
+.project-card-button.with-image h3,
+.project-card-link.with-image h2,
+.project-card-link.with-image h3 {
+  color: #ffffff;
+}
+
+.project-card.with-image .project-badge,
+.project-card-button.with-image .project-badge,
+.project-card-link.with-image .project-badge {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .project-card-button,
