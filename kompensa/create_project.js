@@ -103,8 +103,10 @@ function buildFormData() {
   const points = parseManualCoordinates(manualCoordinatesInput.value);
   const layoutName = manualLayoutNameInput.value.trim();
 
-  formData.append("manual_coordinates", JSON.stringify(points));
+  const manualCoordinates = document.getElementById("manual_coordinates").value.trim();
+  formData.append("manual_coordinates", manualCoordinates);
   formData.append("manual_crs", "EPSG:3006");
+  formData.append("input_mode", "manual");
 
   if (layoutName) {
     formData.append("manual_layout_name", layoutName);
