@@ -1687,4 +1687,37 @@ body {
   .contact-btn {
     width: 100%;
   }
+  /* =========================
+   GLOBAL KOMPENSA BACKGROUND
+   Måste ligga sist i filen
+ ========================= */
+
+ body.kompensa-public-page {
+  position: relative;
+  min-height: 100vh;
+  background: #eef3ef;
+  overflow-x: hidden;
+ }
+
+ body.kompensa-public-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.78)),
+    url("/kompensa/images/index.jpg") center/cover no-repeat;
+  filter: blur(4px);
+  transform: scale(1.03);
+  pointer-events: none;
+  z-index: 0;
+ }
+
+ body.kompensa-public-page::after {
+  display: none !important;
+ }
+
+ body.kompensa-public-page > * {
+  position: relative;
+  z-index: 1;
+ }
 }
