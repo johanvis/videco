@@ -42,70 +42,6 @@ body {
   color: var(--text);
 }
 
-.contact-section {
-  width: 100%;
-  max-width: 1110px;
-  margin: 22px auto 0;
-}
-
-.contact-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 30px 32px;
-  border-radius: 22px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-soft);
-}
-
-.contact-card h2 {
-  margin: 0 0 8px;
-  font-size: 1.6rem;
-}
-
-.contact-card p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.contact-btn {
-  min-width: 180px;
-  flex-shrink: 0;
-}
-
-@media (max-width: 768px) {
-  .contact-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .contact-btn {
-    width: 100%;
-  }
-}
-
-/* Bakgrundsbild på Kompensas landningssida */
-.kompensa-public-page {
-  position: relative;
-  min-height: 100vh;
-  background: #eef3ef;
-}
-
-.kompensa-public-page::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background:
-    linear-gradient(rgba(255,255,255,0.86), rgba(255,255,255,0.86)),
-    url("/kompensa/images/index.jpg") center/cover no-repeat;
-  filter: blur(6px);
-  transform: scale(1.03);
-  z-index: -1;
-}
-
 /* =========================
    GENERIC
 ========================= */
@@ -1547,35 +1483,26 @@ body {
 
 .kompensa-public-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
+  background: #eef3ef;
   position: relative;
   overflow-x: hidden;
 }
 
-.kompensa-public-page::before,
-.kompensa-public-page::after {
+.kompensa-public-page::before {
   content: "";
   position: fixed;
-  border-radius: 999px;
-  filter: blur(50px);
+  inset: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.86)),
+    url("/kompensa/images/index.jpg") center/cover no-repeat;
+  filter: blur(6px);
+  transform: scale(1.03);
   pointer-events: none;
   z-index: 0;
 }
 
-.kompensa-public-page::before {
-  width: 320px;
-  height: 320px;
-  background: rgba(47, 111, 115, 0.12);
-  top: 8%;
-  left: 8%;
-}
-
 .kompensa-public-page::after {
-  width: 260px;
-  height: 260px;
-  background: rgba(42, 95, 99, 0.1);
-  bottom: 10%;
-  right: 10%;
+  display: none;
 }
 
 .public-main {
@@ -1700,6 +1627,44 @@ body {
   font-size: 0.95rem;
 }
 
+/* =========================
+   CONTACT CTA
+========================= */
+
+.contact-section {
+  width: 100%;
+  max-width: 1110px;
+  margin: 22px auto 0;
+}
+
+.contact-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 30px 32px;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.contact-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+}
+
+.contact-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.contact-btn {
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
   .public-main {
     padding: 34px 18px 54px;
@@ -1712,5 +1677,14 @@ body {
 
   .faq-grid {
     grid-template-columns: 1fr;
+  }
+
+  .contact-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .contact-btn {
+    width: 100%;
   }
 }
