@@ -42,6 +42,70 @@ body {
   color: var(--text);
 }
 
+.contact-section {
+  width: 100%;
+  max-width: 1110px;
+  margin: 22px auto 0;
+}
+
+.contact-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 30px 32px;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.contact-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+}
+
+.contact-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.contact-btn {
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .contact-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .contact-btn {
+    width: 100%;
+  }
+}
+
+/* Bakgrundsbild på Kompensas landningssida */
+.kompensa-public-page {
+  position: relative;
+  min-height: 100vh;
+  background: #eef3ef;
+}
+
+.kompensa-public-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255,255,255,0.86), rgba(255,255,255,0.86)),
+    url("/kompensa/images/index.jpg") center/cover no-repeat;
+  filter: blur(6px);
+  transform: scale(1.03);
+  z-index: -1;
+}
+
 /* =========================
    GENERIC
 ========================= */
