@@ -11,10 +11,17 @@ const openMapBtn = document.getElementById("open-map-btn");
 const logoutBtn = document.getElementById("logoutBtn");
 
 const uploadLayoutBtn = document.getElementById("upload-layout-btn");
+const manualLayoutBtn = document.getElementById("manual-layout-btn");
 const layoutFileInput = document.getElementById("layout-file-input");
 const layoutList = document.getElementById("layout-list");
 const layoutEmpty = document.getElementById("layout-empty");
 const layoutLimitInfo = document.getElementById("layout-limit-info");
+
+const manualLayoutPanel = document.getElementById("manual-layout-panel");
+const manualLayoutNameInput = document.getElementById("manual-layout-name");
+const manualLayoutCoordinatesInput = document.getElementById("manual-layout-coordinates");
+const saveManualLayoutBtn = document.getElementById("save-manual-layout-btn");
+const cancelManualLayoutBtn = document.getElementById("cancel-manual-layout-btn");
 
 let currentProject = null;
 let layouts = [];
@@ -32,35 +39,6 @@ function formatDate(dateString) {
   if (Number.isNaN(date.getTime())) return dateString;
 
   return date.toLocaleDateString("sv-SE");
-}
-
-function formatTotalhojd(value) {
-  if (value === null || value === undefined || value === "") return "Ej angiven";
-
-  const numeric = Number(value);
-  if (Number.isNaN(numeric)) return "Ej angiven";
-
-  return `${numeric.toLocaleString("sv-SE")} m`;
-}
-
-function readHeightInputValue(inputEl) {
-  const raw = inputEl?.value ?? "";
-  if (raw === "") return null;
-
-  const numeric = Number(raw);
-  if (Number.isNaN(numeric)) {
-    throw new Error("Totalhöjd måste vara ett tal.");
-  }
-
-  if (numeric <= 50) {
-    throw new Error("Totalhöjd måste vara större än 50 meter.");
-  }
-
-  if (numeric > 500) {
-    throw new Error("Totalhöjd verkar orimligt hög. Ange ett värde upp till 500 meter.");
-  }
-
-  return Number.isInteger(numeric) ? numeric : Number(numeric.toFixed(2));
 }
 
 function setStatus(message = "", variant = "") {
@@ -84,7 +62,9 @@ function updateLayoutLimitInfo(showLimitError = false) {
     setLayoutInfo(`${count} av ${MAX_LAYOUTS} layouter`);
   }
 
-  uploadLayoutBtn.disabled = count >= MAX_LAYOUTS;
+  const isAtLimit = count >= MAX_LAYOUTS;
+  uploadLayoutBtn.disabled = isAtLimit;
+  manualLayoutBtn.disabled = isAtLimit;
 }
 
 async function safeReadJson(response) {
@@ -174,49 +154,6 @@ function resolveHouseCount(project) {
   );
 }
 
-function resolveHouseFetchDistanceKm(project) {
-  const summary = project?.summary || {};
-
-  const rawDistance =
-    summary.houseFetchDistanceKm ??
-    summary.fetchDistanceKm ??
-    summary.bufferDistanceKm ??
-    summary.houseFetchRadiusKm ??
-    project?.houseFetchDistanceKm ??
-    project?.fetchDistanceKm ??
-    project?.bufferDistanceKm ??
-    project?.houseFetchRadiusKm ??
-    null;
-
-  if (rawDistance !== null && rawDistance !== undefined && rawDistance !== "") {
-    const numeric = Number(rawDistance);
-    if (!Number.isNaN(numeric)) {
-      return numeric % 1 === 0 ? String(numeric) : numeric.toFixed(1);
-    }
-    return String(rawDistance);
-  }
-
-  const rawMeters =
-    summary.bufferDistanceMeters ??
-    summary.fetchDistanceMeters ??
-    summary.houseFetchDistanceMeters ??
-    project?.bufferDistanceMeters ??
-    project?.fetchDistanceMeters ??
-    project?.houseFetchDistanceMeters ??
-    null;
-
-  if (rawMeters !== null && rawMeters !== undefined && rawMeters !== "") {
-    const numeric = Number(rawMeters);
-    if (!Number.isNaN(numeric)) {
-      const km = numeric / 1000;
-      return km % 1 === 0 ? String(km) : km.toFixed(1);
-    }
-    return "–";
-  }
-
-  return "–";
-}
-
 function updateProjectSummary(project) {
   currentProject = project;
 
@@ -224,10 +161,7 @@ function updateProjectSummary(project) {
   projectSubtitle.textContent =
     "Här ser du projektets layouter och väljer vilken layout som ska användas i resultatkartan.";
   projectName.textContent = project.name || "–";
-
-  // Uppdatera endast antal bostäder (ingen radius längre)
   projectHouseCount.textContent = resolveHouseCount(project);
-
   projectUpdated.textContent = formatDate(project.updatedAt);
 }
 
@@ -245,6 +179,13 @@ function selectLayout(layoutId, title) {
   setStatus(`Vald layout: ${title}`, "success");
 }
 
+function formatTotalhojd(layout) {
+  if (layout?.totalhojd === null || layout?.totalhojd === undefined || layout?.totalhojd === "") {
+    return "ej angiven";
+  }
+  return `${layout.totalhojd} m`;
+}
+
 function renderLayouts() {
   layoutList.innerHTML = "";
 
@@ -257,30 +198,26 @@ function renderLayouts() {
   layoutEmpty.classList.add("is-hidden");
 
   layouts.forEach((layout, index) => {
-    const item = document.createElement("div");
+    const item = document.createElement("button");
+    item.type = "button";
     item.className = `layout-item layout-select-card ${layout.id === selectedLayoutId ? "active" : ""}`;
-    item.setAttribute("role", "button");
-    item.setAttribute("tabindex", "0");
 
     const title = layout.name || `Layout ${index + 1}`;
     const turbineText = layout.turbineCount ?? "–";
     const createdText = formatDate(layout.createdAt);
     const baseText = layout.isBase ? " · Ursprungslayout" : "";
-    const totalhojdValue = layout.totalhojd ?? "";
 
     item.innerHTML = `
       <div class="layout-main">
         <p class="layout-title">${escapeHtml(title)}</p>
         <p class="layout-meta">
           Turbiner: ${escapeHtml(turbineText)} ·
-          Totalhöjd: ${escapeHtml(formatTotalhojd(layout.totalhojd))} ·
+          Totalhöjd: ${escapeHtml(formatTotalhojd(layout))} ·
           Skapad ${escapeHtml(createdText)}${baseText}
         </p>
 
         <div class="layout-height-editor">
-          <label class="layout-height-label" for="layout-height-${escapeHtml(layout.id)}">
-            Verkens totalhöjd (m)
-          </label>
+          <label class="layout-height-label" for="layout-height-${escapeHtml(layout.id)}">Verkens totalhöjd (m)</label>
           <div class="layout-height-row">
             <input
               id="layout-height-${escapeHtml(layout.id)}"
@@ -289,14 +226,14 @@ function renderLayouts() {
               min="51"
               max="500"
               step="1"
-              value="${escapeHtml(totalhojdValue)}"
-              placeholder="Ange höjd"
+              value="${layout.totalhojd ?? ""}"
+              placeholder="Till exempel 250"
             >
-            <button class="btn btn-secondary save-layout-height-btn" type="button">
-              Spara höjd
-            </button>
+            <button class="btn btn-secondary save-layout-height-btn" type="button">Spara höjd</button>
           </div>
-          <div class="layout-height-help">Höjden sparas för denna layout och används i kartans beräkning.</div>
+          <div class="layout-height-help">
+            Höjden sparas per layout och används när layouten öppnas i kartan.
+          </div>
         </div>
       </div>
       <div class="layout-actions">
@@ -305,16 +242,7 @@ function renderLayouts() {
       </div>
     `;
 
-    item.addEventListener("click", (event) => {
-      if (event.target.closest("input, button")) return;
-      selectLayout(layout.id, title);
-    });
-
-    item.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      if (event.target.closest("input, button")) return;
-
-      event.preventDefault();
+    item.addEventListener("click", () => {
       selectLayout(layout.id, title);
     });
 
@@ -322,12 +250,14 @@ function renderLayouts() {
     const saveHeightBtn = item.querySelector(".save-layout-height-btn");
 
     heightInput?.addEventListener("click", (event) => event.stopPropagation());
-    heightInput?.addEventListener("keydown", (event) => event.stopPropagation());
+    heightInput?.addEventListener("input", (event) => event.stopPropagation());
 
-    saveHeightBtn?.addEventListener("click", async (event) => {
-      event.stopPropagation();
-      await handleSaveLayoutHeight(layout.id, title, heightInput);
-    });
+    if (saveHeightBtn) {
+      saveHeightBtn.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        await handleSaveLayoutHeight(layout.id, heightInput?.value);
+      });
+    }
 
     const deleteBtn = item.querySelector(".delete-layout-btn");
     if (deleteBtn) {
@@ -343,11 +273,7 @@ function renderLayouts() {
   updateLayoutLimitInfo(false);
 }
 
-
-async function uploadLayout(projectId, file) {
-  const formData = new FormData();
-  formData.append("turbines", file);
-
+async function submitLayoutForm(projectId, formData) {
   const response = await fetchWithAuth(
     `${API_BASE}/project/${encodeURIComponent(projectId)}/layouts`,
     {
@@ -361,29 +287,31 @@ async function uploadLayout(projectId, file) {
   const payload = await safeReadJson(response);
 
   if (!response.ok) {
-    throw new Error(payload?.error || "Kunde inte ladda upp layout.");
+    throw new Error(payload?.error || "Kunde inte skapa layout.");
   }
 
   return payload;
 }
 
-async function deleteLayoutRequest(projectId, layoutId) {
-  const response = await fetchWithAuth(
-    `${API_BASE}/project/${encodeURIComponent(projectId)}/layouts/${encodeURIComponent(layoutId)}`,
-    {
-      method: "DELETE"
-    }
-  );
+async function uploadLayout(projectId, file) {
+  const formData = new FormData();
+  formData.append("input_mode", "file");
+  formData.append("turbines", file);
 
-  if (!response) return null;
+  return await submitLayoutForm(projectId, formData);
+}
 
-  const payload = await safeReadJson(response);
+async function createManualLayout(projectId, coordinates, layoutName = "") {
+  const formData = new FormData();
+  formData.append("input_mode", "manual");
+  formData.append("manual_coordinates", coordinates);
+  formData.append("manual_crs", "EPSG:3006");
 
-  if (!response.ok) {
-    throw new Error(payload?.error || "Kunde inte ta bort layout.");
+  if (layoutName.trim()) {
+    formData.append("manual_layout_name", layoutName.trim());
   }
 
-  return payload;
+  return await submitLayoutForm(projectId, formData);
 }
 
 async function updateLayoutRequest(projectId, layoutId, updates) {
@@ -409,6 +337,25 @@ async function updateLayoutRequest(projectId, layoutId, updates) {
   return payload;
 }
 
+async function deleteLayoutRequest(projectId, layoutId) {
+  const response = await fetchWithAuth(
+    `${API_BASE}/project/${encodeURIComponent(projectId)}/layouts/${encodeURIComponent(layoutId)}`,
+    {
+      method: "DELETE"
+    }
+  );
+
+  if (!response) return null;
+
+  const payload = await safeReadJson(response);
+
+  if (!response.ok) {
+    throw new Error(payload?.error || "Kunde inte ta bort layout.");
+  }
+
+  return payload;
+}
+
 async function refreshLayouts(projectId) {
   const layoutPayload = await fetchLayouts(projectId);
   if (!layoutPayload) return false;
@@ -429,15 +376,46 @@ function isAcceptedLayoutFile(file) {
   return (
     lowerName.endsWith(".zip") ||
     lowerName.endsWith(".geojson") ||
-    lowerName.endsWith(".gpkg")
+    lowerName.endsWith(".json") ||
+    lowerName.endsWith(".gpkg") ||
+    lowerName.endsWith(".kml")
   );
+}
+
+function parseManualCoordinates(rawText) {
+  const rows = rawText
+    .split(/\r?\n/)
+    .map((row) => row.trim())
+    .filter(Boolean);
+
+  if (!rows.length) {
+    throw new Error("Ange minst en koordinatrad.");
+  }
+
+  rows.forEach((row, index) => {
+    const normalized = row.replace(/;/g, ",");
+    const parts = normalized.split(",").map((part) => part.trim()).filter(Boolean);
+
+    if (parts.length !== 2) {
+      throw new Error(`Rad ${index + 1} har fel format. Använd X, Y.`);
+    }
+
+    const x = Number(parts[0].replace(/\s/g, ""));
+    const y = Number(parts[1].replace(/\s/g, ""));
+
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      throw new Error(`Rad ${index + 1} innehåller ogiltiga koordinater.`);
+    }
+  });
+
+  return rawText.trim();
 }
 
 async function handleLayoutUpload(projectId, file) {
   if (!file) return;
 
   if (!isAcceptedLayoutFile(file)) {
-    setStatus("Ogiltigt filformat. Använd ZIP, GeoJSON eller GeoPackage.", "error");
+    setStatus("Ogiltigt filformat. Använd ZIP, GeoJSON, GeoPackage eller KML.", "error");
     layoutFileInput.value = "";
     return;
   }
@@ -451,6 +429,7 @@ async function handleLayoutUpload(projectId, file) {
   try {
     setStatus("Laddar upp och validerar layout...", "muted");
     uploadLayoutBtn.disabled = true;
+    manualLayoutBtn.disabled = true;
 
     const result = await uploadLayout(projectId, file);
     if (!result) return;
@@ -470,6 +449,70 @@ async function handleLayoutUpload(projectId, file) {
   } finally {
     layoutFileInput.value = "";
     updateLayoutLimitInfo(false);
+  }
+}
+
+async function handleManualLayoutCreate(projectId) {
+  if (layouts.length >= MAX_LAYOUTS) {
+    updateLayoutLimitInfo(true);
+    return;
+  }
+
+  try {
+    const coordinates = parseManualCoordinates(manualLayoutCoordinatesInput.value);
+    const layoutName = manualLayoutNameInput.value.trim();
+
+    setStatus("Skapar och validerar layout från koordinater...", "muted");
+    saveManualLayoutBtn.disabled = true;
+    uploadLayoutBtn.disabled = true;
+    manualLayoutBtn.disabled = true;
+
+    const result = await createManualLayout(projectId, coordinates, layoutName);
+    if (!result) return;
+
+    const refreshed = await refreshLayouts(projectId);
+    if (!refreshed) return;
+
+    if (result.layout?.id) {
+      selectedLayoutId = result.layout.id;
+      renderLayouts();
+    }
+
+    manualLayoutCoordinatesInput.value = "";
+    manualLayoutNameInput.value = "";
+    manualLayoutPanel.classList.add("is-hidden");
+
+    setStatus(result.message || "Layout skapad från koordinater.", "success");
+  } catch (error) {
+    console.error(error);
+    setStatus(error.message || "Kunde inte skapa layout från koordinater.", "error");
+  } finally {
+    saveManualLayoutBtn.disabled = false;
+    updateLayoutLimitInfo(false);
+  }
+}
+
+async function handleSaveLayoutHeight(layoutId, value) {
+  const projectId = getProjectIdFromUrl();
+  if (!projectId) return;
+
+  try {
+    setStatus("Sparar totalhöjd för layout...", "muted");
+
+    const result = await updateLayoutRequest(projectId, layoutId, {
+      totalhojd: value
+    });
+
+    if (!result) return;
+
+    const refreshed = await refreshLayouts(projectId);
+    if (!refreshed) return;
+
+    selectedLayoutId = layoutId;
+    setStatus(result.message || "Totalhöjd sparad.", "success");
+  } catch (error) {
+    console.error(error);
+    setStatus(error.message || "Kunde inte spara totalhöjd.", "error");
   }
 }
 
@@ -498,37 +541,18 @@ async function handleDeleteLayout(layoutId, layoutName) {
   }
 }
 
-async function handleSaveLayoutHeight(layoutId, layoutName, inputEl) {
-  const projectId = getProjectIdFromUrl();
-  if (!projectId) return;
-
-  try {
-    const totalhojd = readHeightInputValue(inputEl);
-
-    setStatus(`Sparar totalhöjd för ${layoutName}...`, "muted");
-
-    const result = await updateLayoutRequest(projectId, layoutId, { totalhojd });
-    if (!result) return;
-
-    const updatedLayout = result.layout;
-    if (updatedLayout?.id) {
-      layouts = layouts.map((layout) =>
-        layout.id === updatedLayout.id ? { ...layout, ...updatedLayout } : layout
-      );
-      selectedLayoutId = updatedLayout.id;
-      renderLayouts();
-    } else {
-      await refreshLayouts(projectId);
-    }
-
-    setStatus(result.message || `Totalhöjd sparad för ${layoutName}.`, "success");
-  } catch (error) {
-    console.error(error);
-    setStatus(error.message || "Kunde inte spara totalhöjd.", "error");
-  }
+function getSelectedLayout() {
+  return layouts.find((layout) => layout.id === selectedLayoutId) || null;
 }
 
 function openSelectedLayout(projectId) {
+  const selectedLayout = getSelectedLayout();
+
+  if (selectedLayout && !selectedLayout.totalhojd) {
+    setStatus("Ange och spara totalhöjd för vald layout innan du öppnar kartan.", "error");
+    return;
+  }
+
   const url = new URL("project_map.html", window.location.href);
   url.searchParams.set("project", projectId);
 
@@ -552,6 +576,27 @@ function bindEvents(projectId) {
 
     updateLayoutLimitInfo(false);
     layoutFileInput.click();
+  });
+
+  manualLayoutBtn.addEventListener("click", () => {
+    if (layouts.length >= MAX_LAYOUTS) {
+      updateLayoutLimitInfo(true);
+      return;
+    }
+
+    manualLayoutPanel.classList.toggle("is-hidden");
+    setStatus("");
+  });
+
+  cancelManualLayoutBtn.addEventListener("click", () => {
+    manualLayoutPanel.classList.add("is-hidden");
+    manualLayoutCoordinatesInput.value = "";
+    manualLayoutNameInput.value = "";
+    setStatus("");
+  });
+
+  saveManualLayoutBtn.addEventListener("click", async () => {
+    await handleManualLayoutCreate(projectId);
   });
 
   layoutFileInput.addEventListener("change", async () => {

@@ -56,7 +56,8 @@
         <div>
           <h2>Verkslayouter</h2>
           <p class="project-section-note">
-            Här kan du ladda upp alternativa vindkraftsverkslayouter inom projektets tillåtna område.
+            Här kan du ladda upp alternativa vindkraftsverkslayouter eller ange koordinater manuellt.
+            Nya layouter måste ligga inom projektets tillåtna område.
           </p>
         </div>
       </div>
@@ -66,11 +67,15 @@
           Ladda upp ny layout
         </button>
 
+        <button class="btn btn-secondary" id="manual-layout-btn" type="button">
+          Ange koordinater manuellt
+        </button>
+
         <input
           class="hidden-input"
           id="layout-file-input"
           type="file"
-          accept=".zip,.geojson,.gpkg"
+          accept=".zip,.geojson,.json,.gpkg,.kml"
         >
 
         <span class="project-toolbar-status" id="layout-limit-info">
@@ -79,8 +84,46 @@
       </div>
 
       <p class="project-toolbar-note">
-        Tillåtna filformat: ZIP (shapefile: .shp, .shx, .dbf, .prj), GeoJSON (.geojson) och GeoPackage (.gpkg).
+        Tillåtna filformat: ZIP (shapefile: .shp, .shx, .dbf, .prj), GeoJSON (.geojson), GeoPackage (.gpkg) och KML (.kml).
       </p>
+
+      <section id="manual-layout-panel" class="layout-height-editor is-hidden" aria-label="Skapa layout från koordinater">
+        <div class="create-project-field">
+          <label class="create-project-label" for="manual-layout-name">Valfritt layoutnamn</label>
+          <input
+            type="text"
+            id="manual-layout-name"
+            class="input create-project-input"
+            placeholder="Till exempel Layout 2"
+          >
+        </div>
+
+        <div class="create-project-field">
+          <label class="create-project-label" for="manual-layout-coordinates">Turbinkoordinater i SWEREF 99 TM</label>
+          <textarea
+            id="manual-layout-coordinates"
+            class="create-project-textarea"
+            rows="7"
+            placeholder="Ange en turbin per rad, till exempel:
+674321, 145678
+674950, 146120
+675480, 146990"
+          ></textarea>
+          <div class="create-project-hint">
+            Ange en turbin per rad som <strong>X, Y</strong> i SWEREF 99 TM (EPSG:3006).
+            Koordinaterna valideras mot projektets tillåtna område innan layouten sparas.
+          </div>
+        </div>
+
+        <div class="layout-height-row">
+          <button class="btn btn-primary" id="save-manual-layout-btn" type="button">
+            Skapa layout från koordinater
+          </button>
+          <button class="btn btn-secondary" id="cancel-manual-layout-btn" type="button">
+            Avbryt
+          </button>
+        </div>
+      </section>
 
       <div id="layout-list" class="layout-list"></div>
 
