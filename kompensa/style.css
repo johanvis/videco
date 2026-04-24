@@ -1706,7 +1706,7 @@ body.kompensa-public-page::before {
   position: fixed;
   inset: 0;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.78)),
+    linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)),
     url("/kompensa/images/index.jpg") center/cover no-repeat;
   filter: blur(4px);
   transform: scale(1.03);
@@ -1721,4 +1721,29 @@ body.kompensa-public-page::after {
 body.kompensa-public-page > * {
   position: relative;
   z-index: 1;
+}
+
+/* =========================
+   LOGIN BACKGROUND FIX
+   Måste ligga sist
+========================= */
+
+body.kompensa-public-page.page-center::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)),
+    url("/kompensa/images/index.jpg") center/cover no-repeat;
+  filter: blur(4px);
+  transform: scale(1.03);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.kompensa-public-page.page-center::after {
+  display: none !important;
 }
