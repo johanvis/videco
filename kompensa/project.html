@@ -132,6 +132,48 @@
       </div>
     </section>
 
+
+    <section class="project-card faq-section project-faq-section" aria-labelledby="project-faq-title">
+      <div class="faq-header compact">
+        <p class="faq-eyebrow">Hjälp vid uppladdning</p>
+        <h2 id="project-faq-title">Vanliga frågor om layouter och data</h2>
+        <p>
+          Kort vägledning för de vanligaste frågorna innan du öppnar kartan.
+        </p>
+      </div>
+
+      <div class="faq-grid faq-grid-compact">
+        <details class="faq-item">
+          <summary>Vad händer om turbinfilen saknar namn eller ID?</summary>
+          <p>Systemet skapar automatiska interna namn, till exempel VKV 1, VKV 2 och VKV 3. För bästa spårbarhet bör filen ändå innehålla ett stabilt ID-fält, till exempel VERKID.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>Vilka filformat kan jag ladda upp?</summary>
+          <p>ZIP med shapefile, GeoJSON, GeoPackage och KML. För shapefile krävs att ZIP-filen innehåller .shp, .shx, .dbf och .prj.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>Varför måste en ny layout ligga inom projektområdet?</summary>
+          <p>Projektområdet låses från den ursprungliga layouten för att undvika att en användare analyserar ett helt annat geografiskt område i samma projekt.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>Kan jag ange koordinater manuellt?</summary>
+          <p>Ja. Ange en turbin per rad som X, Y i SWEREF 99 TM (EPSG:3006). Koordinaterna kontrolleras innan layouten sparas.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>Vad gör jag om uppladdningen stoppas?</summary>
+          <p>Kontrollera filformat, koordinatsystem, geometrityp och att filen bara innehåller aktuella turbiner för projektet.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>När ska jag använda användarmanualen?</summary>
+          <p>Använd FAQ för snabba svar. Användarmanualen bör användas för mer detaljerade arbetsflöden, datakrav och tolkning av resultat.</p>
+        </details>
+      </div>
+    </section>
     <div class="project-actions">
       <a href="/kompensa/projects.html" class="btn btn-secondary">Tillbaka till projekt</a>
 

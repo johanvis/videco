@@ -10,36 +10,77 @@
   />
   <link rel="icon" type="image/png" sizes="32x32" href="/kompensa/favicon-32.png">
   <link rel="icon" type="image/png" sizes="64x64" href="/kompensa/favicon-64.png">
-  <!-- Kompensa CSS -->
   <link rel="stylesheet" href="/kompensa/style.css" />
 </head>
 
-<body class="page-center">
+<body class="kompensa-public-page">
 
-  <main class="card">
+  <main class="public-main">
+    <section class="card public-hero-card">
+      <img src="/kompensa/logo.png" alt="Kompensa" class="hero-logo">
 
-    <img src="/kompensa/logo.png" alt="Kompensa" class="hero-logo">
+      <h1 class="sr-only">Kompensa</h1>
 
-    <h1 class="sr-only">Kompensa</h1>
+      <p class="subtitle">
+        Ett verktyg för att förstå och visualisera närboendeersättning enligt det nya lagförslaget.
+      </p>
 
-    <p class="subtitle">
-      Ett verktyg för att förstå och visualisera närboendeersättning enligt det nya lagförslaget.
-    </p>
+      <p class="description">
+        Skapa scenarier, jämför alternativa utformningar och få en tydlig bild av hur ersättningen kan fördelas mellan närboende. Ett stöd för både projektutveckling och kommunikation.
+      </p>
 
-    <p class="description">
-      Skapa scenarier, jämför alternativa utformningar och få en tydlig bild av hur ersättningen kan fördelas mellan närboende. Ett stöd för både projektutveckling och kommunikation.
-    </p>
-    </p>
+      <div class="actions">
+        <a class="btn btn-primary" href="/kompensa/login.html">Logga in</a>
+        <a class="btn btn-secondary" href="/kompensa/demo/">Öppna demo</a>
+      </div>
 
-    <div class="actions">
-      <a class="btn btn-primary" href="/kompensa/login.html">Logga in</a>
-      <a class="btn btn-secondary" href="/kompensa/demo/">Öppna demo</a>
-    </div>
+      <div class="footer">
+        Utvecklat av <a href="/">Videco</a>
+      </div>
+    </section>
 
-    <div class="footer">
-      Utvecklat av <a href="/">Videco</a>
-    </div>
+    <section class="faq-section public-faq-section" aria-labelledby="public-faq-title">
+      <div class="faq-header">
+        <p class="faq-eyebrow">Vanliga frågor</p>
+        <h2 id="public-faq-title">Frågor om Kompensa</h2>
+        <p>
+          Här finns korta svar på de vanligaste frågorna om data, beräkning och användning.
+          Mer detaljerad vägledning ges inne i appen där frågorna uppstår.
+        </p>
+      </div>
 
+      <div class="faq-grid">
+        <details class="faq-item">
+          <summary>Vad används Kompensa till?</summary>
+          <p>Kompensa används för att analysera och visualisera möjlig närboendeersättning för vindkraftsprojekt utifrån turbinplaceringar, totalhöjd, antagen produktion och elpris.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>Vilka filformat stöds för turbinpositioner?</summary>
+          <p>GeoPackage (.gpkg), GeoJSON (.geojson/.json), KML (.kml) och ZIP med shapefile stöds. En shapefile ska laddas upp som ZIP och innehålla .shp, .shx, .dbf och .prj.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>Vad händer om turbinfilen saknar namn eller ID?</summary>
+          <p>Systemet skapar automatiska interna namn, till exempel VKV 1, VKV 2 och VKV 3. För tydligare spårbarhet rekommenderas ändå att filen innehåller stabila turbin-ID.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>Vilket koordinatsystem bör användas?</summary>
+          <p>SWEREF 99 TM (EPSG:3006) rekommenderas. Andra koordinatsystem kan hanteras om filen innehåller korrekt CRS-information.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>Kan egna antaganden användas?</summary>
+          <p>Ja. Användaren kan arbeta med fördefinierade scenarier eller ange egna värden för elpris, växelkurs och nettoårsproduktion.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>Är resultatet en juridiskt bindande beräkning?</summary>
+          <p>Nej. Resultatet ska ses som ett scenario- och beslutsstöd. Faktiska ersättningsnivåer beror på gällande lagstiftning, slutliga projektdata och relevanta marknadsantaganden.</p>
+        </details>
+      </div>
+    </section>
   </main>
 
 </body>
