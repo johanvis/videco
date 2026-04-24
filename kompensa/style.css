@@ -1687,19 +1687,21 @@ body {
   .contact-btn {
     width: 100%;
   }
-  /* =========================
-   GLOBAL KOMPENSA BACKGROUND
-   Måste ligga sist i filen
- ========================= */
+}
 
- body.kompensa-public-page {
+/* =========================
+   GLOBAL KOMPENSA BACKGROUND
+   Ligger sist för att vinna över äldre ::before/::after-regler
+========================= */
+
+body.kompensa-public-page {
   position: relative;
   min-height: 100vh;
   background: #eef3ef;
   overflow-x: hidden;
- }
+}
 
- body.kompensa-public-page::before {
+body.kompensa-public-page::before {
   content: "";
   position: fixed;
   inset: 0;
@@ -1710,14 +1712,13 @@ body {
   transform: scale(1.03);
   pointer-events: none;
   z-index: 0;
- }
+}
 
- body.kompensa-public-page::after {
+body.kompensa-public-page::after {
   display: none !important;
- }
+}
 
- body.kompensa-public-page > * {
+body.kompensa-public-page > * {
   position: relative;
   z-index: 1;
- }
 }
