@@ -3,12 +3,12 @@ const API_BASE = window.KOMPENSA_API_BASE;
 async function handleLogin(event) {
   event.preventDefault();
 
-  const email = document.getElementById("email").value;
+  const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
   const errorEl = document.getElementById("error");
 
   errorEl.style.display = "none";
-  errorEl.textContent = "Fel e-post eller lösenord";
+  errorEl.textContent = "Fel användarnamn eller lösenord";
 
   try {
     const response = await fetch(`${API_BASE}/login`, {
@@ -17,7 +17,7 @@ async function handleLogin(event) {
         "Content-Type": "application/json"
       },
       credentials: "include",
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ username, password })
     });
 
     if (response.ok) {
