@@ -34,6 +34,35 @@ function formatDate(dateString) {
   return date.toLocaleDateString("sv-SE");
 }
 
+function formatTotalhojd(value) {
+  if (value === null || value === undefined || value === "") return "Ej angiven";
+
+  const numeric = Number(value);
+  if (Number.isNaN(numeric)) return "Ej angiven";
+
+  return `${numeric.toLocaleString("sv-SE")} m`;
+}
+
+function readHeightInputValue(inputEl) {
+  const raw = inputEl?.value ?? "";
+  if (raw === "") return null;
+
+  const numeric = Number(raw);
+  if (Number.isNaN(numeric)) {
+    throw new Error("Totalhöjd måste vara ett tal.");
+  }
+
+  if (numeric <= 50) {
+    throw new Error("Totalhöjd måste vara större än 50 meter.");
+  }
+
+  if (numeric > 500) {
+    throw new Error("Totalhöjd verkar orimligt hög. Ange ett värde upp till 500 meter.");
+  }
+
+  return Number.isInteger(numeric) ? numeric : Number(numeric.toFixed(2));
+}
+
 function setStatus(message = "", variant = "") {
   statusMessage.className = variant ? `project-status ${variant}` : "project-status";
   statusMessage.textContent = message;
@@ -228,22 +257,47 @@ function renderLayouts() {
   layoutEmpty.classList.add("is-hidden");
 
   layouts.forEach((layout, index) => {
-    const item = document.createElement("button");
-    item.type = "button";
+    const item = document.createElement("div");
     item.className = `layout-item layout-select-card ${layout.id === selectedLayoutId ? "active" : ""}`;
+    item.setAttribute("role", "button");
+    item.setAttribute("tabindex", "0");
 
     const title = layout.name || `Layout ${index + 1}`;
     const turbineText = layout.turbineCount ?? "–";
     const createdText = formatDate(layout.createdAt);
     const baseText = layout.isBase ? " · Ursprungslayout" : "";
+    const totalhojdValue = layout.totalhojd ?? "";
 
     item.innerHTML = `
       <div class="layout-main">
         <p class="layout-title">${escapeHtml(title)}</p>
         <p class="layout-meta">
           Turbiner: ${escapeHtml(turbineText)} ·
+          Totalhöjd: ${escapeHtml(formatTotalhojd(layout.totalhojd))} ·
           Skapad ${escapeHtml(createdText)}${baseText}
         </p>
+
+        <div class="layout-height-editor">
+          <label class="layout-height-label" for="layout-height-${escapeHtml(layout.id)}">
+            Verkens totalhöjd (m)
+          </label>
+          <div class="layout-height-row">
+            <input
+              id="layout-height-${escapeHtml(layout.id)}"
+              class="layout-height-input"
+              type="number"
+              min="51"
+              max="500"
+              step="1"
+              value="${escapeHtml(totalhojdValue)}"
+              placeholder="Ange höjd"
+            >
+            <button class="btn btn-secondary save-layout-height-btn" type="button">
+              Spara höjd
+            </button>
+          </div>
+          <div class="layout-height-help">Höjden sparas för denna layout och används i kartans beräkning.</div>
+        </div>
       </div>
       <div class="layout-actions">
         <span class="layout-select-label">${layout.id === selectedLayoutId ? "Vald layout" : "Klicka för att välja"}</span>
@@ -251,8 +305,28 @@ function renderLayouts() {
       </div>
     `;
 
-    item.addEventListener("click", () => {
+    item.addEventListener("click", (event) => {
+      if (event.target.closest("input, button")) return;
       selectLayout(layout.id, title);
+    });
+
+    item.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      if (event.target.closest("input, button")) return;
+
+      event.preventDefault();
+      selectLayout(layout.id, title);
+    });
+
+    const heightInput = item.querySelector(".layout-height-input");
+    const saveHeightBtn = item.querySelector(".save-layout-height-btn");
+
+    heightInput?.addEventListener("click", (event) => event.stopPropagation());
+    heightInput?.addEventListener("keydown", (event) => event.stopPropagation());
+
+    saveHeightBtn?.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      await handleSaveLayoutHeight(layout.id, title, heightInput);
     });
 
     const deleteBtn = item.querySelector(".delete-layout-btn");
@@ -268,6 +342,7 @@ function renderLayouts() {
 
   updateLayoutLimitInfo(false);
 }
+
 
 async function uploadLayout(projectId, file) {
   const formData = new FormData();
@@ -306,6 +381,29 @@ async function deleteLayoutRequest(projectId, layoutId) {
 
   if (!response.ok) {
     throw new Error(payload?.error || "Kunde inte ta bort layout.");
+  }
+
+  return payload;
+}
+
+async function updateLayoutRequest(projectId, layoutId, updates) {
+  const response = await fetchWithAuth(
+    `${API_BASE}/project/${encodeURIComponent(projectId)}/layouts/${encodeURIComponent(layoutId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(updates)
+    }
+  );
+
+  if (!response) return null;
+
+  const payload = await safeReadJson(response);
+
+  if (!response.ok) {
+    throw new Error(payload?.error || "Kunde inte spara layout.");
   }
 
   return payload;
@@ -397,6 +495,36 @@ async function handleDeleteLayout(layoutId, layoutName) {
     setStatus(error.message || "Kunde inte ta bort layout.", "error");
   } finally {
     updateLayoutLimitInfo(false);
+  }
+}
+
+async function handleSaveLayoutHeight(layoutId, layoutName, inputEl) {
+  const projectId = getProjectIdFromUrl();
+  if (!projectId) return;
+
+  try {
+    const totalhojd = readHeightInputValue(inputEl);
+
+    setStatus(`Sparar totalhöjd för ${layoutName}...`, "muted");
+
+    const result = await updateLayoutRequest(projectId, layoutId, { totalhojd });
+    if (!result) return;
+
+    const updatedLayout = result.layout;
+    if (updatedLayout?.id) {
+      layouts = layouts.map((layout) =>
+        layout.id === updatedLayout.id ? { ...layout, ...updatedLayout } : layout
+      );
+      selectedLayoutId = updatedLayout.id;
+      renderLayouts();
+    } else {
+      await refreshLayouts(projectId);
+    }
+
+    setStatus(result.message || `Totalhöjd sparad för ${layoutName}.`, "success");
+  } catch (error) {
+    console.error(error);
+    setStatus(error.message || "Kunde inte spara totalhöjd.", "error");
   }
 }
 

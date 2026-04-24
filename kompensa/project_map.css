@@ -772,3 +772,35 @@ body {
   cursor: not-allowed;
 }
 }
+/* =========================
+   TOTALHÖJD SAVE STATUS
+========================= */
+
+.totalhojd-save-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.totalhojd-save-btn {
+  min-width: auto;
+  padding: 8px 11px;
+  font-size: 0.82rem;
+  border-radius: 10px;
+}
+
+.totalhojd-save-status {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.totalhojd-save-status.success {
+  color: var(--success);
+}
+
+.totalhojd-save-status.error {
+  color: var(--danger);
+}

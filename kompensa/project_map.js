@@ -84,6 +84,12 @@ let resultsOverlayEl = null;
 let cachedTurbines = null;
 let cachedResidences = null;
 
+let currentProjectId = null;
+let currentLayoutId = null;
+let currentLayout = null;
+let savedTotalhojd = null;
+let totalhojdIsDirty = false;
+
 function getCachedTurbines() {
   if (!cachedTurbines && turbinesLayer) {
     cachedTurbines = turbinesLayer.toGeoJSON().features;
@@ -282,6 +288,150 @@ function getProjectAndLayoutFromUrl() {
     project: params.get('project'),
     layout: params.get('layout')
   };
+}
+
+async function safeReadJson(response) {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+function normalizeTotalhojdInputValue(value) {
+  if (value === null || value === undefined || value === '') return null;
+
+  const numeric = Number(value);
+  if (Number.isNaN(numeric)) {
+    throw new Error('Totalhöjd måste vara ett tal.');
+  }
+
+  if (numeric <= 50) {
+    throw new Error('Totalhöjd måste vara större än 50 meter.');
+  }
+
+  if (numeric > 500) {
+    throw new Error('Totalhöjd verkar orimligt hög. Ange ett värde upp till 500 meter.');
+  }
+
+  return Number.isInteger(numeric) ? numeric : Number(numeric.toFixed(2));
+}
+
+function setTotalhojdSaveStatus(message = '', variant = '') {
+  const statusEl = document.getElementById('totalhojdSaveStatus');
+  if (!statusEl) return;
+
+  statusEl.className = variant
+    ? `totalhojd-save-status ${variant}`
+    : 'totalhojd-save-status';
+  statusEl.textContent = message;
+}
+
+function updateSaveTotalhojdButtonState() {
+  const saveBtn = document.getElementById('saveTotalhojdBtn');
+  const isValid = updateTotalhojdState();
+
+  if (saveBtn) {
+    saveBtn.disabled = !currentProjectId || !currentLayoutId || !isValid || !totalhojdIsDirty;
+  }
+}
+
+function setTotalhojdInputFromLayout(layout) {
+  const totalhojdEl = document.getElementById('totalhojd');
+  if (!totalhojdEl || !layout) return;
+
+  savedTotalhojd = layout.totalhojd ?? null;
+  totalhojdEl.value = savedTotalhojd ?? '';
+  totalhojdIsDirty = false;
+
+  updateTotalhojdState();
+  updateSaveTotalhojdButtonState();
+}
+
+function markTotalhojdDirty() {
+  const totalhojdEl = document.getElementById('totalhojd');
+  const currentValue = totalhojdEl?.value ?? '';
+  const savedValue = savedTotalhojd === null || savedTotalhojd === undefined ? '' : String(savedTotalhojd);
+
+  totalhojdIsDirty = currentValue !== savedValue;
+  setTotalhojdSaveStatus(totalhojdIsDirty ? 'Osparad ändring' : '');
+  updateSaveTotalhojdButtonState();
+}
+
+async function fetchProjectLayouts(projectId) {
+  const response = await fetch(`${API_BASE}/project/${encodeURIComponent(projectId)}/layouts`, {
+    cache: 'no-store',
+    credentials: 'include'
+  });
+
+  if (response.status === 401) {
+    window.location.href = '/kompensa/login.html';
+    return null;
+  }
+
+  const payload = await safeReadJson(response);
+
+  if (!response.ok) {
+    throw new Error(payload?.error || 'Kunde inte läsa layoutmetadata.');
+  }
+
+  return payload;
+}
+
+async function updateLayoutTotalhojd(projectId, layoutId, totalhojd) {
+  const response = await fetch(
+    `${API_BASE}/project/${encodeURIComponent(projectId)}/layouts/${encodeURIComponent(layoutId)}`,
+    {
+      method: 'PATCH',
+      cache: 'no-store',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ totalhojd })
+    }
+  );
+
+  if (response.status === 401) {
+    window.location.href = '/kompensa/login.html';
+    return null;
+  }
+
+  const payload = await safeReadJson(response);
+
+  if (!response.ok) {
+    throw new Error(payload?.error || 'Kunde inte spara totalhöjd.');
+  }
+
+  return payload;
+}
+
+async function saveCurrentLayoutTotalhojd() {
+  try {
+    if (!currentProjectId || !currentLayoutId) {
+      throw new Error('Saknar vald layout. Öppna kartan från projektsidan igen.');
+    }
+
+    const totalhojdEl = document.getElementById('totalhojd');
+    const totalhojd = normalizeTotalhojdInputValue(totalhojdEl?.value ?? '');
+
+    setTotalhojdSaveStatus('Sparar...', '');
+
+    const result = await updateLayoutTotalhojd(currentProjectId, currentLayoutId, totalhojd);
+    if (!result) return;
+
+    currentLayout = result.layout || currentLayout;
+    savedTotalhojd = currentLayout?.totalhojd ?? totalhojd;
+    totalhojdIsDirty = false;
+
+    setTotalhojdSaveStatus('Sparad', 'success');
+    updateSaveTotalhojdButtonState();
+    autoCalculate();
+  } catch (error) {
+    console.error(error);
+    setTotalhojdSaveStatus(error.message || 'Kunde inte spara totalhöjd.', 'error');
+    updateSaveTotalhojdButtonState();
+  }
 }
 
 // ==========================
@@ -1435,11 +1585,13 @@ async function loadProjectData() {
   try {
     updateRevenuePreview();
 
-    const { project: projectName, layout: layoutId } = getProjectAndLayoutFromUrl();
+    const { project: projectName, layout: layoutIdFromUrl } = getProjectAndLayoutFromUrl();
 
     if (!projectName) {
       throw new Error('Saknar project-parameter i URL.');
     }
+
+    currentProjectId = projectName;
 
     const safeProjectName = encodeURIComponent(projectName);
 
@@ -1453,8 +1605,22 @@ async function loadProjectData() {
       credentials: 'include'
     };
 
-    const turbineUrl = layoutId
-      ? `${API_BASE}/project/${safeProjectName}/turbines?layout=${encodeURIComponent(layoutId)}`
+    const layoutPayload = await fetchProjectLayouts(projectName);
+    if (!layoutPayload) return;
+
+    const layouts = Array.isArray(layoutPayload.layouts) ? layoutPayload.layouts : [];
+    currentLayoutId = layoutIdFromUrl || layoutPayload.activeLayoutId || layouts[0]?.id || null;
+
+    if (currentLayoutId) {
+      currentLayout = layouts.find(layout => layout.id === currentLayoutId) || null;
+      if (!currentLayout) {
+        throw new Error('Vald layout hittades inte. Öppna kartan från projektsidan igen.');
+      }
+      setTotalhojdInputFromLayout(currentLayout);
+    }
+
+    const turbineUrl = currentLayoutId
+      ? `${API_BASE}/project/${safeProjectName}/turbines?layout=${encodeURIComponent(currentLayoutId)}`
       : `${API_BASE}/project/${safeProjectName}/turbines`;
 
     const [projectResponse, turbineResponse, residenceResponse] = await Promise.all([
@@ -1502,7 +1668,8 @@ async function loadProjectData() {
 
     const topbarProjectNameEl = document.getElementById('topbarProjectName');
     if (topbarProjectNameEl) {
-      topbarProjectNameEl.textContent = projectMeta?.name || projectName;
+      const layoutSuffix = currentLayout?.name ? ` – ${currentLayout.name}` : '';
+      topbarProjectNameEl.textContent = `${projectMeta?.name || projectName}${layoutSuffix}`;
     }
 
     turbinesGeoJSON = maybeReprojectGeoJSON(turbinesGeoJSON, detectCrsFromGeoJSON(turbinesGeoJSON));
@@ -1550,12 +1717,14 @@ document.addEventListener('DOMContentLoaded', () => {
       updateTotalhojdState();
       updateRevenuePreview();
       autoCalculate();
+      if (id === 'totalhojd') markTotalhojdDirty();
     });
 
     el.addEventListener('change', () => {
       updateTotalhojdState();
       updateRevenuePreview();
       autoCalculate();
+      if (id === 'totalhojd') markTotalhojdDirty();
     });
   });
 
@@ -1658,6 +1827,11 @@ document.addEventListener('DOMContentLoaded', () => {
     manualModeBtn.addEventListener('click', () => setMode('manual'));
   }
 
+  const saveTotalhojdBtn = document.getElementById('saveTotalhojdBtn');
+  if (saveTotalhojdBtn) {
+    saveTotalhojdBtn.addEventListener('click', saveCurrentLayoutTotalhojd);
+  }
+
   const infoIconButtons = document.querySelectorAll('.info-icon-btn');
   infoIconButtons.forEach(button => {
     button.addEventListener('click', function (event) {
@@ -1690,6 +1864,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setMode('scenario');
   renderScenarioCards();
   updateTotalhojdState();
+  updateSaveTotalhojdButtonState();
   updateRevenuePreview();
   loadProjectData();
 

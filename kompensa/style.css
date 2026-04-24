@@ -1408,3 +1408,71 @@ body {
     justify-content: center;
   }
 }
+
+/* =========================
+   LAYOUT HEIGHT EDITOR
+========================= */
+
+.layout-height-editor {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.layout-height-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.layout-height-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.layout-height-input {
+  width: 150px;
+  max-width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 0.98rem;
+}
+
+.layout-height-input:focus {
+  outline: none;
+  border-color: rgba(42, 95, 99, 0.4);
+  box-shadow: 0 0 0 3px rgba(42, 95, 99, 0.08);
+}
+
+.save-layout-height-btn {
+  min-width: auto;
+  padding: 11px 16px;
+  font-size: 0.92rem;
+}
+
+.layout-height-help {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+  .layout-height-row {
+    align-items: stretch;
+  }
+
+  .layout-height-input,
+  .save-layout-height-btn {
+    width: 100%;
+  }
+}
