@@ -990,6 +990,10 @@ body {
   color: var(--muted);
 }
 
+.project-toolbar-open-btn {
+  margin-left: auto;
+}
+
 .project-toolbar-status.error {
   color: var(--danger);
 }
@@ -1364,12 +1368,10 @@ body {
     background 0.18s ease,
     border-color 0.18s ease,
     color 0.18s ease,
-    transform 0.18s ease;
 }
 
 .create-project-mode-btn:hover {
   background: #ffffff;
-  transform: translateY(-1px);
 }
 
 .create-project-mode-btn.is-active {

@@ -81,7 +81,10 @@
         <span class="project-toolbar-status" id="layout-limit-info">
           Laddar layouter...
         </span>
-      </div>
+        <button class="btn btn-primary project-toolbar-open-btn" id="open-map-btn" type="button">
+          Öppna vald layout
+        </button>
+      </div>  
 
       <p class="project-toolbar-note">
         Tillåtna filformat: ZIP (shapefile: .shp, .shx, .dbf, .prj), GeoJSON (.geojson), GeoPackage (.gpkg) och KML (.kml).
@@ -176,10 +179,6 @@
     </section>
     <div class="project-actions">
       <a href="/kompensa/projects.html" class="btn btn-secondary">Tillbaka till projekt</a>
-
-      <button class="btn btn-primary" id="open-map-btn" type="button">
-        Öppna vald layout
-      </button>
     </div>
 
     <div id="status-message" class="project-status"></div>
