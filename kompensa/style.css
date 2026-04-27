@@ -1094,6 +1094,17 @@ body {
   color: var(--primary);
 }
 
+.layout-height-warning {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff4e5;
+  border: 1px solid #f0b35a;
+  color: #7a3f00;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .project-empty-state {
   color: var(--muted);
   font-size: 0.98rem;

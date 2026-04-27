@@ -26,6 +26,7 @@ const cancelManualLayoutBtn = document.getElementById("cancel-manual-layout-btn"
 let currentProject = null;
 let layouts = [];
 let selectedLayoutId = null;
+let layoutValidationMessage = "";
 
 function getProjectIdFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -175,6 +176,7 @@ function ensureSelectedLayout() {
 
 function selectLayout(layoutId, title) {
   selectedLayoutId = layoutId;
+  layoutValidationMessage = "";
   renderLayouts();
   setStatus(`Vald layout: ${title}`, "success");
 }
@@ -234,6 +236,12 @@ function renderLayouts() {
           <div class="layout-height-help">
             Höjden sparas per layout och används när layouten öppnas i kartan.
           </div>
+
+          ${
+            layout.id === selectedLayoutId && layoutValidationMessage
+              ? `<div class="layout-height-warning">${escapeHtml(layoutValidationMessage)}</div>`
+              : ""
+          }
         </div>
       </div>
       <div class="layout-actions">
@@ -548,17 +556,29 @@ function getSelectedLayout() {
 function openSelectedLayout(projectId) {
   const selectedLayout = getSelectedLayout();
 
-  if (selectedLayout && !selectedLayout.totalhojd) {
-    setStatus("Ange och spara totalhöjd för vald layout innan du öppnar kartan.", "error");
+  if (!selectedLayout) {
+    setStatus("Välj en layout innan du öppnar kartan.", "error");
     return;
   }
 
+  if (!selectedLayout.totalhojd) {
+    layoutValidationMessage =
+      "Du måste ange och spara totalhöjd innan layouten kan öppnas i kartan.";
+
+    renderLayouts();
+
+    const heightInput = document.getElementById(`layout-height-${selectedLayout.id}`);
+    heightInput?.focus();
+
+    setStatus("");
+    return;
+  }
+
+  layoutValidationMessage = "";
+
   const url = new URL("project_map.html", window.location.href);
   url.searchParams.set("project", projectId);
-
-  if (selectedLayoutId) {
-    url.searchParams.set("layout", selectedLayoutId);
-  }
+  url.searchParams.set("layout", selectedLayout.id);
 
   window.location.href = url.toString();
 }
