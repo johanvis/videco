@@ -378,9 +378,9 @@ const DEFAULT_MANUAL_PRODUCTION_GWH = 26.3;
 // Priserna är satta som enkla produktscenarier för demon.
 // De är ankrade kring långsiktiga nivåer snarare än dagens marknad.
 const scenarioDefinitions = {
-  low: { key: 'low', label: 'Låg', priceSekPerMWh: 840 },
-  base: { key: 'base', label: 'Bas', priceSekPerMWh: 935 },
-  high: { key: 'high', label: 'Hög', priceSekPerMWh: 1030 }
+  low: { key: 'low', label: 'Låg', priceSekPerMWh: 300 },
+  base: { key: 'base', label: 'Bas', priceSekPerMWh: 700 },
+  high: { key: 'high', label: 'Hög', priceSekPerMWh: 1500 }
 };
 
 function getManualInputs() {
